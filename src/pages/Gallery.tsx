@@ -102,9 +102,6 @@ export default function Gallery() {
             {series.map((serie) => (
               <TabsTrigger key={serie} value={serie} className="text-sm">
                 {serie}
-                {serie === 'Adultos' && (
-                  <span className="ml-1 text-xs text-muted-foreground">(A y B)</span>
-                )}
               </TabsTrigger>
             ))}
           </TabsList>

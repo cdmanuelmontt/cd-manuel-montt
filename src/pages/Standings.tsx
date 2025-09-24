@@ -102,9 +102,6 @@ export default function Standings() {
             {series.map((serie) => (
               <TabsTrigger key={serie} value={serie} className="text-sm">
                 {serie}
-                {serie === 'Adultos' && (
-                  <span className="ml-2 text-xs text-muted-foreground">(CD Manuel Montt A y B)</span>
-                )}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -116,9 +113,6 @@ export default function Standings() {
                   <CardTitle className="flex items-center space-x-2">
                     <Trophy className="h-5 w-5 text-primary" />
                     <span>Serie {serie}</span>
-                    {serie === 'Adultos' && (
-                      <span className="ml-2 text-xs text-muted-foreground">(CD Manuel Montt A y B)</span>
-                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
