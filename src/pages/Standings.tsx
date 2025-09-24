@@ -97,11 +97,14 @@ export default function Standings() {
           </p>
         </div>
 
-  <Tabs defaultValue="Adultos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
+        <Tabs defaultValue="Adultos" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             {series.map((serie) => (
               <TabsTrigger key={serie} value={serie} className="text-sm">
                 {serie}
+                {serie === 'Adultos' && (
+                  <span className="ml-2 text-xs text-muted-foreground">(CD Manuel Montt A y B)</span>
+                )}
               </TabsTrigger>
             ))}
           </TabsList>

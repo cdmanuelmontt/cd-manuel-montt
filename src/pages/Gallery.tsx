@@ -98,7 +98,7 @@ export default function Gallery() {
         </div>
 
   <Tabs defaultValue="Adultos" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             {series.map((serie) => (
               <TabsTrigger key={serie} value={serie} className="text-sm">
                 {serie}
