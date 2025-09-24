@@ -49,8 +49,9 @@ export default function About() {
 
   const stats = [
     { label: "Años de Historia", value: "15+", icon: History },
-    { label: "Series Activas", value: "4", icon: Users },
-    { label: "Títulos Ganados", value: "8", icon: Trophy },
+    { label: "Series Activas", value: "3", icon: Users },
+    { label: "Equipos", value: "4", icon: Trophy },
+    { label: "Títulos Ganados", value: "8", icon: Award },
     { label: "Jugadores", value: "80+", icon: Heart }
   ];
 
@@ -194,8 +195,12 @@ export default function About() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-6">
-              Nuestro club está organizado en diferentes series por categorías de edad, 
-              permitiendo que jugadores de todas las edades puedan disfrutar del fútbol competitivo.
+              Nuestro club compite en 3 series: Adultos, Senior y Super Senior, con 4 equipos en total:
+              <br />
+              <strong>Adultos:</strong> CD Manuel Montt A y CD Manuel Montt B<br />
+              <strong>Senior:</strong> CD Manuel Montt<br />
+              <strong>Super Senior:</strong> CD Manuel Montt<br />
+              Todos los equipos representan a la misma institución en distintas categorías de edad.
             </p>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-4">

@@ -16,7 +16,7 @@ interface GalleryImage {
   description: string;
 }
 
-const series = ['Adultos A', 'Adultos B', 'Senior', 'Super Senior'];
+const series = ['Adultos', 'Senior', 'Super Senior'];
 
 export default function Gallery() {
   const [images, setImages] = useState<Record<string, GalleryImage[]>>({});
@@ -36,12 +36,16 @@ export default function Gallery() {
 
       if (error) throw error;
 
-      // Group by series
+      // Group by series, merging Adultos A and B into 'Adultos'
       const groupedImages = (data || []).reduce((acc, image) => {
-        if (!acc[image.series]) {
-          acc[image.series] = [];
+        let key = image.series;
+        if (key === 'Adultos A' || key === 'Adultos B') {
+          key = 'Adultos';
         }
-        acc[image.series].push(image);
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(image);
         return acc;
       }, {} as Record<string, GalleryImage[]>);
 
@@ -93,11 +97,14 @@ export default function Gallery() {
           </p>
         </div>
 
-        <Tabs defaultValue="Adultos A" className="w-full">
+  <Tabs defaultValue="Adultos" className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
             {series.map((serie) => (
               <TabsTrigger key={serie} value={serie} className="text-sm">
                 {serie}
+                {serie === 'Adultos' && (
+                  <span className="ml-1 text-xs text-muted-foreground">(A y B)</span>
+                )}
               </TabsTrigger>
             ))}
           </TabsList>

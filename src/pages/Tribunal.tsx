@@ -47,10 +47,10 @@ export default function Tribunal() {
 
   const getSeriesColor = (series: string) => {
     switch (series) {
+      case 'Adultos':
       case 'Adultos A':
-        return 'bg-primary text-primary-foreground';
       case 'Adultos B':
-        return 'bg-secondary text-secondary-foreground';
+        return 'bg-primary text-primary-foreground';
       case 'Senior':
         return 'bg-accent text-accent-foreground';
       case 'Super Senior':
@@ -124,9 +124,9 @@ export default function Tribunal() {
                           {player.name}
                         </TableCell>
                         <TableCell>
-                          <Badge className={getSeriesColor(player.series)}>
-                            {player.series}
-                          </Badge>
+              <Badge className={getSeriesColor(player.series)}>
+                {['Adultos A', 'Adultos B'].includes(player.series) ? 'Adultos' : player.series}
+              </Badge>
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge className={getSeverityColor(player.remaining_matches)}>

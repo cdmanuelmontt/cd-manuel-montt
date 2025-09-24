@@ -28,7 +28,7 @@ interface Standing {
   };
 }
 
-const series = ['Adultos A', 'Adultos B', 'Senior', 'Super Senior'];
+const series = ['Adultos', 'Senior', 'Super Senior'];
 
 export default function Standings() {
   const [standings, setStandings] = useState<Record<string, Standing[]>>({});
@@ -50,12 +50,16 @@ export default function Standings() {
 
       if (error) throw error;
 
-      // Group by series
+      // Group by series, merging Adultos A and B into 'Adultos'
       const groupedStandings = (data || []).reduce((acc, standing) => {
-        if (!acc[standing.series]) {
-          acc[standing.series] = [];
+        let key = standing.series;
+        if (key === 'Adultos A' || key === 'Adultos B') {
+          key = 'Adultos';
         }
-        acc[standing.series].push(standing);
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(standing);
         return acc;
       }, {} as Record<string, Standing[]>);
 
@@ -93,7 +97,7 @@ export default function Standings() {
           </p>
         </div>
 
-        <Tabs defaultValue="Adultos A" className="w-full">
+  <Tabs defaultValue="Adultos" className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
             {series.map((serie) => (
               <TabsTrigger key={serie} value={serie} className="text-sm">
@@ -109,6 +113,9 @@ export default function Standings() {
                   <CardTitle className="flex items-center space-x-2">
                     <Trophy className="h-5 w-5 text-primary" />
                     <span>Serie {serie}</span>
+                    {serie === 'Adultos' && (
+                      <span className="ml-2 text-xs text-muted-foreground">(CD Manuel Montt A y B)</span>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

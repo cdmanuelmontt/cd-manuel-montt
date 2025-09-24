@@ -88,17 +88,20 @@ export default function Home() {
               Pasión, compromiso y fair play en cada partido. Únete a nuestra familia futbolística 
               y vive la emoción del deporte rey.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
+            <div className="mt-10 flex flex-col items-center justify-center gap-y-2 gap-x-6">
               <div className="flex items-center space-x-4 text-white">
                 <div className="flex items-center space-x-1">
                   <Users className="h-5 w-5" />
-                  <span className="text-sm font-medium">4 Series</span>
+                  <span className="text-sm font-medium">3 Series</span>
                 </div>
                 <div className="h-4 w-px bg-white/30"></div>
                 <div className="flex items-center space-x-1">
                   <Calendar className="h-5 w-5" />
                   <span className="text-sm font-medium">Temporada 2024</span>
                 </div>
+              </div>
+              <div className="text-white text-xs sm:text-sm mt-2">
+                CD Manuel Montt compite con 2 equipos en Adultos (A y B), 1 en Senior y 1 en Super Senior.
               </div>
             </div>
           </div>
