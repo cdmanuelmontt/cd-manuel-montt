@@ -15,6 +15,7 @@ interface Match {
   venue: string;
   series: string;
   round: string;
+  tournament: { name: string };
 }
 
 export default function Home() {
@@ -37,7 +38,8 @@ export default function Home() {
           series,
           round,
           team:teams!next_matches_team_id_fkey(name),
-          vs_team:teams!next_matches_vs_team_id_fkey(name)
+          vs_team:teams!next_matches_vs_team_id_fkey(name),
+          tournament:tournaments(name)
         `)
         .order('match_date', { ascending: true });
 
@@ -48,6 +50,13 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const capitalizeTeamName = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
   };
 
   const getSeriesColor = (series: string) => {
@@ -139,33 +148,54 @@ export default function Home() {
           ) : upcomingMatches.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {upcomingMatches.map((match) => (
-                <Card key={match.id} className="football-card">
-                  <CardHeader className="pb-4">
+                <Card key={match.id} className="football-card group hover:shadow-elegant transition-all duration-300 border-2 hover:border-primary/30 overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <CardHeader className="pb-3 space-y-3">
                     <div className="flex justify-between items-start">
-                      <Badge className={getSeriesColor(match.series)}>
-                        {match.series}
-                      </Badge>
-                      <div className="text-right text-sm text-muted-foreground">
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {format(new Date(match.match_date), "dd MMM yyyy", { locale: es })}
+                      <div className="space-y-1">
+                        <Badge className={`${getSeriesColor(match.series)} font-semibold`}>
+                          {match.series}
+                        </Badge>
+                        {match.round && (
+                          <div className="text-xs font-medium text-muted-foreground">
+                            Fecha {match.round}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right text-sm font-medium">
+                        <div className="flex items-center justify-end text-foreground/80">
+                          <Calendar className="h-4 w-4 mr-1.5" />
+                          {format(new Date(match.match_date), "dd MMM", { locale: es })}
                         </div>
                         {match.match_time && (
-                          <div className="flex items-center mt-1">
-                            <Clock className="h-4 w-4 mr-1" />
+                          <div className="flex items-center justify-end mt-1 text-foreground/80">
+                            <Clock className="h-4 w-4 mr-1.5" />
                             {match.match_time.substring(0, 5)}
                           </div>
                         )}
                       </div>
                     </div>
+                    {match.tournament?.name && (
+                      <div className="text-xs text-center text-muted-foreground font-medium bg-muted/50 py-1 px-2 rounded">
+                        {match.tournament.name}
+                      </div>
+                    )}
                   </CardHeader>
-                  <CardContent>
-                    <CardTitle className="text-center mb-4 text-lg">
-                      {match.team?.name} vs {match.vs_team?.name}
-                    </CardTitle>
-                    <div className="flex items-center justify-center text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {match.venue}
+                  <CardContent className="space-y-4">
+                    <div className="relative">
+                      <CardTitle className="text-center text-base sm:text-lg font-bold leading-tight">
+                        <span className="text-primary hover:text-primary/80 transition-colors">
+                          {capitalizeTeamName(match.team?.name || '')}
+                        </span>
+                        <span className="mx-2 text-muted-foreground font-normal">vs</span>
+                        <span className="text-primary hover:text-primary/80 transition-colors">
+                          {capitalizeTeamName(match.vs_team?.name || '')}
+                        </span>
+                      </CardTitle>
+                    </div>
+                    <div className="flex items-center justify-center text-sm text-muted-foreground bg-accent/30 py-2 px-3 rounded-md">
+                      <MapPin className="h-4 w-4 mr-2 text-primary/70" />
+                      <span className="font-medium">{match.venue}</span>
                     </div>
                   </CardContent>
                 </Card>
