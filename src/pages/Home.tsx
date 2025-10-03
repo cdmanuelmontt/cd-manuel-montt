@@ -3,6 +3,7 @@ import { Calendar, MapPin, Clock, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -21,6 +22,9 @@ interface Match {
 
 interface MatchResult {
   result: 'win' | 'loss' | 'draw';
+  opponentName: string;
+  teamScore: number;
+  opponentScore: number;
 }
 
 export default function Home() {
@@ -36,7 +40,16 @@ export default function Home() {
     try {
       const { data, error } = await supabase
         .from('matches')
-        .select('id, home_team_id, away_team_id, home_score, away_score, match_date')
+        .select(`
+          id, 
+          home_team_id, 
+          away_team_id, 
+          home_score, 
+          away_score, 
+          match_date,
+          home_team:teams!matches_home_team_id_fkey(name),
+          away_team:teams!matches_away_team_id_fkey(name)
+        `)
         .eq('status', 'completed')
         .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
         .not('home_score', 'is', null)
@@ -50,10 +63,19 @@ export default function Home() {
         const isHome = match.home_team_id === teamId;
         const teamScore = isHome ? match.home_score : match.away_score;
         const opponentScore = isHome ? match.away_score : match.home_score;
+        const opponentName = isHome ? match.away_team?.name : match.home_team?.name;
 
-        if (teamScore > opponentScore) return { result: 'win' };
-        if (teamScore < opponentScore) return { result: 'loss' };
-        return { result: 'draw' };
+        let result: 'win' | 'loss' | 'draw';
+        if (teamScore > opponentScore) result = 'win';
+        else if (teamScore < opponentScore) result = 'loss';
+        else result = 'draw';
+
+        return { 
+          result, 
+          opponentName: opponentName || 'Desconocido',
+          teamScore,
+          opponentScore
+        };
       });
 
       return results;
@@ -252,21 +274,31 @@ export default function Home() {
                       <div className="text-xs font-semibold text-center text-muted-foreground mb-2">
                         Partidos Pasados
                       </div>
-                      <div className="flex justify-center gap-2">
-                        {teamResults[match.team_id]?.length > 0 ? (
-                          teamResults[match.team_id].map((result, idx) => (
-                            <div
-                              key={idx}
-                              className={`w-8 h-8 rounded-full ${getResultColor(result.result)} flex items-center justify-center text-white text-xs font-bold shadow-sm`}
-                              title={result.result === 'win' ? 'Victoria' : result.result === 'loss' ? 'Derrota' : 'Empate'}
-                            >
-                              {result.result === 'win' ? 'G' : result.result === 'loss' ? 'P' : 'E'}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-xs text-muted-foreground">Sin datos</div>
-                        )}
-                      </div>
+                      <TooltipProvider>
+                        <div className="flex justify-center gap-2">
+                          {teamResults[match.team_id]?.length > 0 ? (
+                            teamResults[match.team_id].map((result, idx) => (
+                              <Tooltip key={idx}>
+                                <TooltipTrigger>
+                                  <div
+                                    className={`w-8 h-8 rounded-full ${getResultColor(result.result)} flex items-center justify-center text-white text-xs font-bold shadow-sm hover:scale-110 transition-transform cursor-pointer`}
+                                  >
+                                    {result.result === 'win' ? 'G' : result.result === 'loss' ? 'P' : 'E'}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <div className="text-center">
+                                    <p className="font-semibold">{capitalizeTeamName(result.opponentName)}</p>
+                                    <p className="text-sm">{result.teamScore} - {result.opponentScore}</p>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            ))
+                          ) : (
+                            <div className="text-xs text-muted-foreground">Sin datos</div>
+                          )}
+                        </div>
+                      </TooltipProvider>
                     </div>
                   </CardContent>
                 </Card>
