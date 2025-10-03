@@ -8,12 +8,13 @@ import { es } from "date-fns/locale";
 
 interface Match {
   id: string;
-  home_team: { name: string };
-  away_team: { name: string };
+  team: { name: string };
+  vs_team: { name: string };
   match_date: string;
+  match_time: string;
   venue: string;
   series: string;
-  status: string;
+  round: string;
 }
 
 export default function Home() {
@@ -27,23 +28,21 @@ export default function Home() {
   const fetchUpcomingMatches = async () => {
     try {
       const { data, error } = await supabase
-        .from('matches')
+        .from('next_matches' as any)
         .select(`
           id,
           match_date,
+          match_time,
           venue,
           series,
-          status,
-          home_team:teams!matches_home_team_id_fkey(name),
-          away_team:teams!matches_away_team_id_fkey(name)
+          round,
+          team:teams!next_matches_team_id_fkey(name),
+          vs_team:teams!next_matches_vs_team_id_fkey(name)
         `)
-        .eq('status', 'scheduled')
-        .gte('match_date', new Date().toISOString())
-        .order('match_date', { ascending: true })
-        .limit(6);
+        .order('match_date', { ascending: true });
 
       if (error) throw error;
-      setUpcomingMatches(data || []);
+      setUpcomingMatches(data as any || []);
     } catch (error) {
       console.error('Error fetching matches:', error);
     } finally {
@@ -151,16 +150,18 @@ export default function Home() {
                           <Calendar className="h-4 w-4 mr-1" />
                           {format(new Date(match.match_date), "dd MMM yyyy", { locale: es })}
                         </div>
-                        <div className="flex items-center mt-1">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {format(new Date(match.match_date), "HH:mm")}
-                        </div>
+                        {match.match_time && (
+                          <div className="flex items-center mt-1">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {match.match_time.substring(0, 5)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <CardTitle className="text-center mb-4 text-lg">
-                      {match.home_team?.name} vs {match.away_team?.name}
+                      {match.team?.name} vs {match.vs_team?.name}
                     </CardTitle>
                     <div className="flex items-center justify-center text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4 mr-1" />
