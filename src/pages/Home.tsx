@@ -150,50 +150,45 @@ export default function Home() {
               {upcomingMatches.map((match) => (
                 <Card key={match.id} className="football-card group hover:shadow-elegant transition-all duration-300 border-2 hover:border-primary/30 overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <CardHeader className="pb-3 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <Badge className={`${getSeriesColor(match.series)} font-semibold`}>
-                          {match.series}
-                        </Badge>
-                        {match.round && (
-                          <div className="text-xs font-medium text-muted-foreground">
-                            Fecha {match.round}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-right text-sm font-medium">
-                        <div className="flex items-center justify-end text-foreground/80">
-                          <Calendar className="h-4 w-4 mr-1.5" />
-                          {format(new Date(match.match_date), "dd MMM", { locale: es })}
-                        </div>
-                        {match.match_time && (
-                          <div className="flex items-center justify-end mt-1 text-foreground/80">
-                            <Clock className="h-4 w-4 mr-1.5" />
-                            {match.match_time.substring(0, 5)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                  <CardHeader className="pb-4 space-y-3">
                     {match.tournament?.name && (
-                      <div className="text-xs text-center text-muted-foreground font-medium bg-muted/50 py-1 px-2 rounded">
+                      <div className="text-center font-bold text-foreground text-base">
                         {match.tournament.name}
                       </div>
                     )}
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="relative">
-                      <CardTitle className="text-center text-base sm:text-lg font-bold leading-tight">
-                        <span className="text-primary hover:text-primary/80 transition-colors">
-                          {capitalizeTeamName(match.team?.name || '')}
-                        </span>
-                        <span className="mx-2 text-muted-foreground font-normal">vs</span>
-                        <span className="text-primary hover:text-primary/80 transition-colors">
-                          {capitalizeTeamName(match.vs_team?.name || '')}
-                        </span>
-                      </CardTitle>
+                    <div className="flex justify-center">
+                      <Badge className={`${getSeriesColor(match.series)} font-semibold text-sm`}>
+                        {match.series}
+                      </Badge>
                     </div>
-                    <div className="flex items-center justify-center text-sm text-muted-foreground bg-accent/30 py-2 px-3 rounded-md">
+                    <div className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
+                      {match.round && <span>Fecha {match.round}</span>}
+                      <span>-</span>
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {format(new Date(match.match_date), "dd MMM", { locale: es })}
+                      </div>
+                      {match.match_time && (
+                        <>
+                          <Clock className="h-4 w-4 ml-1" />
+                          <span>{match.match_time.substring(0, 5)}</span>
+                        </>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="text-center space-y-2">
+                      <div className="text-lg font-bold text-primary hover:text-primary/80 transition-colors py-2">
+                        {capitalizeTeamName(match.team?.name || '')}
+                      </div>
+                      <div className="text-sm text-muted-foreground font-semibold">
+                        vs
+                      </div>
+                      <div className="text-lg font-bold text-primary hover:text-primary/80 transition-colors py-2">
+                        {capitalizeTeamName(match.vs_team?.name || '')}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center text-sm text-muted-foreground bg-accent/30 py-2 px-3 rounded-md mt-4">
                       <MapPin className="h-4 w-4 mr-2 text-primary/70" />
                       <span className="font-medium">{match.venue}</span>
                     </div>
