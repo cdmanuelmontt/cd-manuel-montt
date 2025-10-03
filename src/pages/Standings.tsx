@@ -1,3 +1,7 @@
+// Utility to capitalize the first letter of each word
+function toTitleCase(str: string) {
+  return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+}
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -156,7 +160,7 @@ export default function Standings() {
                                 </div>
                               </TableCell>
                               <TableCell className="font-medium">
-                                {standing.team?.name}
+                                {standing.team?.name ? toTitleCase(standing.team.name) : ''}
                               </TableCell>
                               <TableCell className="text-center">
                                 {standing.matches_played}
