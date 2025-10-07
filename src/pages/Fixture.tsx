@@ -4,8 +4,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Calendar, Trophy, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Icon } from "lucide-react";
+
+// Dynamic import for soccer ball icon from @lucide/lab
+const SoccerBallIcon = ({ className }: { className?: string }) => {
+  const [soccerBall, setSoccerBall] = useState(null);
+  
+  useEffect(() => {
+    const loadIcon = async () => {
+      try {
+        const { soccerBall: importedSoccerBall } = await import("@lucide/lab");
+        setSoccerBall(importedSoccerBall);
+      } catch (error) {
+        console.warn("Could not load soccer ball icon from @lucide/lab");
+      }
+    };
+    loadIcon();
+  }, []);
+
+  if (soccerBall) {
+    return <Icon iconNode={soccerBall} className={className} />;
+  }
+  
+  // Fallback to a simple circle while loading or if import fails
+  return <div className={`${className} rounded-full border-2 border-current`} />;
+};
 
 // Utility to capitalize the first letter of each word
 function toTitleCase(str: string) {
@@ -49,9 +72,10 @@ export default function Fixture() {
   const [matches, setMatches] = useState<Record<string, MatchByRound[]>>({});
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [availableSeries, setAvailableSeries] = useState<string[]>([]);
+  const [availableRounds, setAvailableRounds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTournament, setSelectedTournament] = useState<string>('');
-  const [openRounds, setOpenRounds] = useState<Record<string, boolean>>({});
+  const [selectedRound, setSelectedRound] = useState<string>('all');
 
   useEffect(() => {
     fetchTournaments();
@@ -59,6 +83,7 @@ export default function Fixture() {
 
   useEffect(() => {
     if (selectedTournament) {
+      setSelectedRound('all'); // Reset round filter when tournament changes
       fetchMatches();
     }
   }, [selectedTournament]);
@@ -96,15 +121,24 @@ export default function Fixture() {
 
       if (error) throw error;
 
-      // Get unique series from the matches
-      const uniqueSeries = [...new Set((data || []).map(match => {
+      // Get unique series from the matches and sort them in the desired order
+      const seriesOrder = ['Infantil', 'Adultos', 'Senior', 'Super Senior', 'Dorada'];
+      const uniqueSeriesSet = new Set((data || []).map(match => {
         let series = match.series;
         if (series === 'Adultos A' || series === 'Adultos B') {
           series = 'Adultos';
         }
         return series;
-      }))];
-      setAvailableSeries(uniqueSeries);
+      }));
+      
+      // Filter and sort series according to the desired order
+      const sortedSeries = seriesOrder.filter(series => uniqueSeriesSet.has(series));
+      setAvailableSeries(sortedSeries);
+
+      // Get unique rounds and sort them numerically
+      const uniqueRounds = [...new Set((data || []).map(match => match.round))];
+      uniqueRounds.sort((a, b) => parseInt(a) - parseInt(b));
+      setAvailableRounds(uniqueRounds);
 
       // Group matches by series and round
       const groupedMatches = (data || []).reduce((acc, match) => {
@@ -140,19 +174,6 @@ export default function Fixture() {
     }
   };
 
-  const toggleRound = (serie: string, round: number) => {
-    const key = `${serie}-${round}`;
-    setOpenRounds(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
-  const isRoundOpen = (serie: string, round: number) => {
-    const key = `${serie}-${round}`;
-    return openRounds[key] || false;
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
@@ -160,36 +181,6 @@ export default function Fixture() {
       month: '2-digit',
       year: 'numeric'
     });
-  };
-
-  const getMatchStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return "bg-green-500 text-white";
-      case 'in_progress':
-        return "bg-yellow-500 text-white";
-      case 'pending':
-        return "bg-blue-500 text-white";
-      case 'cancelled':
-        return "bg-red-500 text-white";
-      default:
-        return "bg-gray-500 text-white";
-    }
-  };
-
-  const getMatchStatusText = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return "Finalizado";
-      case 'in_progress':
-        return "En Progreso";
-      case 'pending':
-        return "Programado";
-      case 'cancelled':
-        return "Cancelado";
-      default:
-        return "Sin Estado";
-    }
   };
 
   return (
@@ -204,8 +195,8 @@ export default function Fixture() {
           </p>
         </div>
 
-        {/* Tournament Selector */}
-        <div className="mb-8 flex justify-center">
+        {/* Tournament and Round Selectors */}
+        <div className="mb-8 flex flex-col sm:flex-row justify-center gap-4">
           <div className="w-64">
             <Select value={selectedTournament} onValueChange={setSelectedTournament}>
               <SelectTrigger className="w-full">
@@ -215,6 +206,21 @@ export default function Fixture() {
                 {tournaments.map((tournament) => (
                   <SelectItem key={tournament.id} value={tournament.id}>
                     {tournament.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-64">
+            <Select value={selectedRound} onValueChange={setSelectedRound}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecciona una jornada" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las jornadas</SelectItem>
+                {availableRounds.map((round) => (
+                  <SelectItem key={round} value={round}>
+                    Jornada {round}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -253,87 +259,67 @@ export default function Fixture() {
                     ))}
                   </div>
                 ) : matches[serie] && matches[serie].length > 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                    {matches[serie].map((roundData) => (
-                      <Collapsible 
-                        key={roundData.round} 
-                        open={isRoundOpen(serie, roundData.round)}
-                        onOpenChange={() => toggleRound(serie, roundData.round)}
-                      >
-                        <Card className="football-card h-fit">
-                          <CollapsibleTrigger asChild>
-                            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                              <CardTitle className="flex items-center justify-between">
+                  (() => {
+                    const filteredRounds = matches[serie].filter(roundData => 
+                      selectedRound === 'all' || roundData.round === selectedRound
+                    );
+                    
+                    return filteredRounds.length > 0 ? (
+                      <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                        {filteredRounds.map((roundData) => (
+                          <Card key={roundData.round} className="football-card h-fit">
+                            <CardHeader>
+                              <CardTitle className="flex items-center">
                                 <div className="flex items-center space-x-2">
-                                  <Calendar className="h-5 w-5 text-primary" />
+                                  <SoccerBallIcon className="h-5 w-5 text-primary" />
                                   <span>Fecha {roundData.round}</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <Badge variant="secondary" className="text-xs">
-                                    {roundData.matches.length} partidos
-                                  </Badge>
-                                  {isRoundOpen(serie, roundData.round) ? (
-                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                  ) : (
-                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                  )}
                                 </div>
                               </CardTitle>
                             </CardHeader>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <CardContent className="pt-0">
-                              <div className="space-y-3">
+                            <CardContent>
+                              <div className="space-y-2">
                                 {roundData.matches.map((match) => (
-                                  <div key={match.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30 transition-colors">
-                                    <div className="flex flex-col space-y-2 flex-1">
-                                      <div className="flex items-center space-x-2">
-                                        <Badge className={`text-xs ${getMatchStatusBadge(match.status)}`}>
-                                          {getMatchStatusText(match.status)}
-                                        </Badge>
+                                  <div key={match.id} className="p-2 border rounded-md hover:bg-muted/30 transition-colors">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <div className="flex items-center space-x-2 flex-1">
+                                        <span className="font-medium truncate min-w-0">
+                                          {match.home_team?.name ? toTitleCase(match.home_team.name) : 'TBD'}
+                                        </span>
                                       </div>
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex flex-col space-y-1 flex-1">
-                                          <div className="flex items-center justify-between">
-                                            <span className="font-medium text-sm truncate">
-                                              {match.home_team?.name ? toTitleCase(match.home_team.name) : 'TBD'}
-                                            </span>
-                                            {match.home_score !== null ? (
-                                              <span className="text-lg font-bold text-primary ml-2">
-                                                {match.home_score}
-                                              </span>
-                                            ) : (
-                                              <span className="text-lg font-bold text-muted-foreground ml-2">
-                                                -
-                                              </span>
-                                            )}
-                                          </div>
-                                          <div className="flex items-center justify-between">
-                                            <span className="font-medium text-sm truncate">
-                                              {match.away_team?.name ? toTitleCase(match.away_team.name) : 'TBD'}
-                                            </span>
-                                            {match.away_score !== null ? (
-                                              <span className="text-lg font-bold text-primary ml-2">
-                                                {match.away_score}
-                                              </span>
-                                            ) : (
-                                              <span className="text-lg font-bold text-muted-foreground ml-2">
-                                                -
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
+                                      <div className="flex items-center space-x-2 mx-3">
+                                        <span className="text-sm font-bold text-primary">
+                                          {match.home_score !== null ? match.home_score : '-'}
+                                        </span>
+                                        <span className="text-muted-foreground">-</span>
+                                        <span className="text-sm font-bold text-primary">
+                                          {match.away_score !== null ? match.away_score : '-'}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center space-x-2 flex-1">
+                                        <span className="font-medium truncate min-w-0 text-right">
+                                          {match.away_team?.name ? toTitleCase(match.away_team.name) : 'TBD'}
+                                        </span>
                                       </div>
                                     </div>
                                   </div>
                                 ))}
                               </div>
                             </CardContent>
-                          </CollapsibleContent>
-                        </Card>
-                      </Collapsible>
-                    ))}
-                  </div>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <Card className="football-card">
+                        <CardContent className="text-center py-12">
+                          <SoccerBallIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                          <h3 className="text-lg font-semibold mb-2">No hay partidos para esta jornada</h3>
+                          <p className="text-muted-foreground">
+                            No se encontraron partidos para la jornada {selectedRound} en la serie {serie}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    );
+                  })()
                 ) : (
                   <Card className="football-card">
                     <CardContent className="text-center py-12">

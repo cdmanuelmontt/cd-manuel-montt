@@ -105,11 +105,48 @@ export default function Home() {
 
       if (error) throw error;
       const matches = data as any || [];
-      setUpcomingMatches(matches);
+      
+      // Define the same series order as in Fixture page
+      const seriesOrder = ['Infantil', 'Adultos', 'Senior', 'Super Senior', 'Dorada'];
+      
+      // Sort matches by series order, then by match date
+      const sortedMatches = matches.sort((a: any, b: any) => {
+        // Normalize series names (convert Adultos A/B to Adultos)
+        let seriesA = a.series;
+        let seriesB = b.series;
+        
+        if (seriesA === 'Adultos A' || seriesA === 'Adultos B') {
+          seriesA = 'Adultos';
+        }
+        if (seriesB === 'Adultos A' || seriesB === 'Adultos B') {
+          seriesB = 'Adultos';
+        }
+        
+        const indexA = seriesOrder.indexOf(seriesA);
+        const indexB = seriesOrder.indexOf(seriesB);
+        
+        // If both series are in the order array, sort by series order
+        if (indexA !== -1 && indexB !== -1) {
+          if (indexA !== indexB) {
+            return indexA - indexB;
+          }
+          // If same series, sort by date
+          return new Date(a.match_date).getTime() - new Date(b.match_date).getTime();
+        }
+        
+        // If only one series is in the order array, prioritize it
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        // If neither series is in the order array, sort by date
+        return new Date(a.match_date).getTime() - new Date(b.match_date).getTime();
+      });
+      
+      setUpcomingMatches(sortedMatches);
 
       // Fetch last results for each team
       const resultsMap: Record<string, MatchResult[]> = {};
-      for (const match of matches) {
+      for (const match of sortedMatches) {
         if (match.team_id && !resultsMap[match.team_id]) {
           resultsMap[match.team_id] = await fetchTeamLastResults(match.team_id);
         }
@@ -139,6 +176,9 @@ export default function Home() {
 
   const getSeriesColor = (series: string) => {
     switch (series) {
+      case 'Infantil':
+        return 'bg-blue-500 text-white';
+      case 'Adultos':
       case 'Adultos A':
         return 'bg-primary text-primary-foreground';
       case 'Adultos B':
@@ -146,7 +186,9 @@ export default function Home() {
       case 'Senior':
         return 'bg-accent text-accent-foreground';
       case 'Super Senior':
-        return 'bg-muted text-muted-foreground';
+        return 'bg-orange-500 text-white';
+      case 'Dorada':
+        return 'bg-yellow-500 text-black';
       default:
         return 'bg-muted text-muted-foreground';
     }
