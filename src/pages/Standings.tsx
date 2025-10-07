@@ -136,22 +136,23 @@ export default function Standings() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-12">Pos</TableHead>
+                            <TableHead className="w-12 md:table-cell hidden">Pos</TableHead>
+                            <TableHead className="text-center w-16 md:hidden">Pts</TableHead>
                             <TableHead>Equipo</TableHead>
-                            <TableHead className="text-center w-16">PJ</TableHead>
-                            <TableHead className="text-center w-16">PG</TableHead>
-                            <TableHead className="text-center w-16">PE</TableHead>
-                            <TableHead className="text-center w-16">PP</TableHead>
-                            <TableHead className="text-center w-16">GF</TableHead>
-                            <TableHead className="text-center w-16">GC</TableHead>
-                            <TableHead className="text-center w-16">DG</TableHead>
-                            <TableHead className="text-center w-16">Pts</TableHead>
+                            <TableHead className="text-center w-16 hidden md:table-cell">PJ</TableHead>
+                            <TableHead className="text-center w-16 hidden md:table-cell">PG</TableHead>
+                            <TableHead className="text-center w-16 hidden md:table-cell">PE</TableHead>
+                            <TableHead className="text-center w-16 hidden md:table-cell">PP</TableHead>
+                            <TableHead className="text-center w-16 hidden lg:table-cell">GF</TableHead>
+                            <TableHead className="text-center w-16 hidden lg:table-cell">GC</TableHead>
+                            <TableHead className="text-center w-16 hidden lg:table-cell">DG</TableHead>
+                            <TableHead className="text-center w-16 hidden md:table-cell">Pts</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {standings[serie].map((standing) => (
                             <TableRow key={standing.id} className="hover:bg-muted/50">
-                              <TableCell>
+                              <TableCell className="md:table-cell hidden">
                                 <div className="flex items-center space-x-2">
                                   <Badge className={`w-6 h-6 rounded-full p-0 flex items-center justify-center text-xs ${getPositionBadge(standing.position)}`}>
                                     {standing.position}
@@ -159,28 +160,31 @@ export default function Standings() {
                                   {getPositionIcon(standing.position)}
                                 </div>
                               </TableCell>
+                              <TableCell className="text-center font-bold text-primary md:hidden">
+                                {standing.points}
+                              </TableCell>
                               <TableCell className="font-medium">
                                 {standing.team?.name ? toTitleCase(standing.team.name) : ''}
                               </TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className="text-center hidden md:table-cell">
                                 {standing.matches_played}
                               </TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className="text-center hidden md:table-cell">
                                 {standing.wins}
                               </TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className="text-center hidden md:table-cell">
                                 {standing.draws}
                               </TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className="text-center hidden md:table-cell">
                                 {standing.losses}
                               </TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className="text-center hidden lg:table-cell">
                                 {standing.goals_for}
                               </TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className="text-center hidden lg:table-cell">
                                 {standing.goals_against}
                               </TableCell>
-                              <TableCell className="text-center">
+                              <TableCell className="text-center hidden lg:table-cell">
                                 <span className={`font-medium ${
                                   standing.goals_for - standing.goals_against > 0 
                                     ? 'text-green-600' 
@@ -192,7 +196,7 @@ export default function Standings() {
                                   {standing.goals_for - standing.goals_against}
                                 </span>
                               </TableCell>
-                              <TableCell className="text-center font-bold text-primary">
+                              <TableCell className="text-center font-bold text-primary hidden md:table-cell">
                                 {standing.points}
                               </TableCell>
                             </TableRow>
