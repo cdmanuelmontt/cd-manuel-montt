@@ -280,13 +280,13 @@ export default function Fixture() {
                               <div className="space-y-2">
                                 {roundData.matches.map((match) => (
                                   <div key={match.id} className="p-2 border rounded-md hover:bg-muted/30 transition-colors">
-                                    <div className="flex items-center justify-between text-xs">
-                                      <div className="flex items-center space-x-2 flex-1">
-                                        <span className="font-medium truncate min-w-0">
+                                    <div className="flex items-center justify-between text-xs gap-2 min-w-0">
+                                      <div className="flex-1 min-w-0">
+                                        <span className="font-medium truncate block">
                                           {match.home_team?.name ? toTitleCase(match.home_team.name) : 'TBD'}
                                         </span>
                                       </div>
-                                      <div className="flex items-center space-x-2 mx-3">
+                                      <div className="flex items-center gap-1 shrink-0">
                                         <span className="text-sm font-bold text-primary">
                                           {match.home_score !== null ? match.home_score : '-'}
                                         </span>
@@ -295,8 +295,8 @@ export default function Fixture() {
                                           {match.away_score !== null ? match.away_score : '-'}
                                         </span>
                                       </div>
-                                      <div className="flex items-center space-x-2 flex-1">
-                                        <span className="font-medium truncate min-w-0 text-right">
+                                      <div className="flex-1 min-w-0 text-right">
+                                        <span className="font-medium truncate block">
                                           {match.away_team?.name ? toTitleCase(match.away_team.name) : 'TBD'}
                                         </span>
                                       </div>
