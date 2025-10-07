@@ -72,10 +72,11 @@ export default function Fixture() {
   const [matches, setMatches] = useState<Record<string, MatchByRound[]>>({});
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [availableSeries, setAvailableSeries] = useState<string[]>([]);
-  const [availableRounds, setAvailableRounds] = useState<string[]>([]);
+  const [availableRounds, setAvailableRounds] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedTournament, setSelectedTournament] = useState<string>('');
   const [selectedRound, setSelectedRound] = useState<string>('all');
+  const [selectedSeries, setSelectedSeries] = useState<string>('');
 
   useEffect(() => {
     fetchTournaments();
@@ -134,11 +135,33 @@ export default function Fixture() {
       // Filter and sort series according to the desired order
       const sortedSeries = seriesOrder.filter(series => uniqueSeriesSet.has(series));
       setAvailableSeries(sortedSeries);
+      
+      // Set the first series as selected by default if not already set
+      if (sortedSeries.length > 0 && !selectedSeries) {
+        setSelectedSeries(sortedSeries[0]);
+      }
 
-      // Get unique rounds and sort them numerically
-      const uniqueRounds = [...new Set((data || []).map(match => match.round))];
-      uniqueRounds.sort((a, b) => parseInt(a) - parseInt(b));
-      setAvailableRounds(uniqueRounds);
+      // Get unique rounds per series and sort them numerically
+      const roundsBySeries: Record<string, string[]> = {};
+      (data || []).forEach(match => {
+        let series = match.series;
+        if (series === 'Adultos A' || series === 'Adultos B') {
+          series = 'Adultos';
+        }
+        if (!roundsBySeries[series]) {
+          roundsBySeries[series] = [];
+        }
+        if (!roundsBySeries[series].includes(match.round)) {
+          roundsBySeries[series].push(match.round);
+        }
+      });
+      
+      // Sort rounds numerically for each series
+      Object.keys(roundsBySeries).forEach(series => {
+        roundsBySeries[series].sort((a, b) => parseInt(a) - parseInt(b));
+      });
+      
+      setAvailableRounds(roundsBySeries);
 
       // Group matches by series and round
       const groupedMatches = (data || []).reduce((acc, match) => {
@@ -202,7 +225,7 @@ export default function Fixture() {
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecciona un torneo" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50">
                 {tournaments.map((tournament) => (
                   <SelectItem key={tournament.id} value={tournament.id}>
                     {tournament.name}
@@ -216,9 +239,9 @@ export default function Fixture() {
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecciona una jornada" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50">
                 <SelectItem value="all">Todas las jornadas</SelectItem>
-                {availableRounds.map((round) => (
+                {selectedSeries && availableRounds[selectedSeries]?.map((round) => (
                   <SelectItem key={round} value={round}>
                     Jornada {round}
                   </SelectItem>
@@ -229,7 +252,14 @@ export default function Fixture() {
         </div>
 
         {availableSeries.length > 0 ? (
-          <Tabs defaultValue={availableSeries[0]} className="w-full">
+          <Tabs 
+            value={selectedSeries || availableSeries[0]} 
+            onValueChange={(value) => {
+              setSelectedSeries(value);
+              setSelectedRound('all'); // Reset round when switching series
+            }}
+            className="w-full"
+          >
             <TabsList className={`grid w-full mb-8 ${availableSeries.length === 1 ? 'grid-cols-1' : availableSeries.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
               {availableSeries.map((serie) => (
                 <TabsTrigger key={serie} value={serie} className="text-sm">
