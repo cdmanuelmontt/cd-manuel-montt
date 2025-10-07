@@ -6,41 +6,44 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-
 interface Match {
   id: string;
-  team: { name: string; id: string };
-  vs_team: { name: string };
+  team: {
+    name: string;
+    id: string;
+  };
+  vs_team: {
+    name: string;
+  };
   match_date: string;
   match_time: string;
   venue: string;
   series: string;
   round: string;
-  tournament: { name: string };
+  tournament: {
+    name: string;
+  };
   team_id: string;
 }
-
 interface MatchResult {
   result: 'win' | 'loss' | 'draw';
   opponentName: string;
   teamScore: number;
   opponentScore: number;
 }
-
 export default function Home() {
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [teamResults, setTeamResults] = useState<Record<string, MatchResult[]>>({});
-
   useEffect(() => {
     fetchUpcomingMatches();
   }, []);
-
   const fetchTeamLastResults = async (teamId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('matches')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('matches').select(`
           id, 
           home_team_id, 
           away_team_id, 
@@ -49,47 +52,36 @@ export default function Home() {
           match_date,
           home_team:teams!matches_home_team_id_fkey(name),
           away_team:teams!matches_away_team_id_fkey(name)
-        `)
-        .eq('status', 'completed')
-        .or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
-        .not('home_score', 'is', null)
-        .not('away_score', 'is', null)
-        .order('match_date', { ascending: false })
-        .limit(3);
-
+        `).eq('status', 'completed').or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`).not('home_score', 'is', null).not('away_score', 'is', null).order('match_date', {
+        ascending: false
+      }).limit(3);
       if (error) throw error;
-
       const results: MatchResult[] = (data || []).map((match: any) => {
         const isHome = match.home_team_id === teamId;
         const teamScore = isHome ? match.home_score : match.away_score;
         const opponentScore = isHome ? match.away_score : match.home_score;
         const opponentName = isHome ? match.away_team?.name : match.home_team?.name;
-
         let result: 'win' | 'loss' | 'draw';
-        if (teamScore > opponentScore) result = 'win';
-        else if (teamScore < opponentScore) result = 'loss';
-        else result = 'draw';
-
-        return { 
-          result, 
+        if (teamScore > opponentScore) result = 'win';else if (teamScore < opponentScore) result = 'loss';else result = 'draw';
+        return {
+          result,
           opponentName: opponentName || 'Desconocido',
           teamScore,
           opponentScore
         };
       });
-
       return results;
     } catch (error) {
       console.error('Error fetching team results:', error);
       return [];
     }
   };
-
   const fetchUpcomingMatches = async () => {
     try {
-      const { data, error } = await supabase
-        .from('next_matches' as any)
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('next_matches' as any).select(`
           id,
           match_date,
           match_time,
@@ -100,31 +92,29 @@ export default function Home() {
           team:teams!next_matches_team_id_fkey(id, name),
           vs_team:teams!next_matches_vs_team_id_fkey(name),
           tournament:tournaments(name)
-        `)
-        .order('match_date', { ascending: true });
-
+        `).order('match_date', {
+        ascending: true
+      });
       if (error) throw error;
       const matches = data as any || [];
-      
+
       // Define the same series order as in Fixture page
       const seriesOrder = ['Infantil', 'Adultos', 'Senior', 'Super Senior', 'Dorada'];
-      
+
       // Sort matches by series order, then by match date
       const sortedMatches = matches.sort((a: any, b: any) => {
         // Normalize series names (convert Adultos A/B to Adultos)
         let seriesA = a.series;
         let seriesB = b.series;
-        
         if (seriesA === 'Adultos A' || seriesA === 'Adultos B') {
           seriesA = 'Adultos';
         }
         if (seriesB === 'Adultos A' || seriesB === 'Adultos B') {
           seriesB = 'Adultos';
         }
-        
         const indexA = seriesOrder.indexOf(seriesA);
         const indexB = seriesOrder.indexOf(seriesB);
-        
+
         // If both series are in the order array, sort by series order
         if (indexA !== -1 && indexB !== -1) {
           if (indexA !== indexB) {
@@ -133,15 +123,14 @@ export default function Home() {
           // If same series, sort by date
           return new Date(a.match_date).getTime() - new Date(b.match_date).getTime();
         }
-        
+
         // If only one series is in the order array, prioritize it
         if (indexA !== -1) return -1;
         if (indexB !== -1) return 1;
-        
+
         // If neither series is in the order array, sort by date
         return new Date(a.match_date).getTime() - new Date(b.match_date).getTime();
       });
-      
       setUpcomingMatches(sortedMatches);
 
       // Fetch last results for each team
@@ -158,22 +147,19 @@ export default function Home() {
       setLoading(false);
     }
   };
-
   const capitalizeTeamName = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+    return name.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
   };
-
   const getResultColor = (result: 'win' | 'loss' | 'draw') => {
     switch (result) {
-      case 'win': return 'bg-green-500';
-      case 'loss': return 'bg-red-500';
-      case 'draw': return 'bg-yellow-500';
+      case 'win':
+        return 'bg-green-500';
+      case 'loss':
+        return 'bg-red-500';
+      case 'draw':
+        return 'bg-yellow-500';
     }
   };
-
   const getSeriesColor = (series: string) => {
     switch (series) {
       case 'Infantil':
@@ -193,20 +179,14 @@ export default function Home() {
         return 'bg-muted text-muted-foreground';
     }
   };
-
-  return (
-    <div className="min-h-screen">
+  return <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative overflow-hidden gradient-hero">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative mx-auto max-w-7xl px-4 py-24 sm:py-32 lg:px-8">
           <div className="text-center">
             <div className="mb-8 flex justify-center">
-              <img 
-                src="/logo.png" 
-                alt="Club Logo" 
-                className="h-32 w-auto shadow-glow hover:scale-105 transition-transform duration-300"
-              />
+              <img src="/logo.png" alt="Club Logo" className="h-32 w-auto shadow-glow hover:scale-105 transition-transform duration-300" />
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
               Bienvenidos a nuestro
@@ -216,22 +196,7 @@ export default function Home() {
               Pasión, compromiso y fair play en cada partido. Únete a nuestra familia futbolística 
               y vive la emoción del deporte rey.
             </p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-y-2 gap-x-6">
-              <div className="flex items-center space-x-4 text-white">
-                <div className="flex items-center space-x-1">
-                  <Users className="h-5 w-5" />
-                  <span className="text-sm font-medium">3 Series</span>
-                </div>
-                <div className="h-4 w-px bg-white/30"></div>
-                <div className="flex items-center space-x-1">
-                  <Calendar className="h-5 w-5" />
-                  <span className="text-sm font-medium">Temporada 2024</span>
-                </div>
-              </div>
-              <div className="text-white text-xs sm:text-sm mt-2">
-                CD Manuel Montt compite con 2 equipos en Adultos (A y B), 1 en Senior y 1 en Super Senior.
-              </div>
-            </div>
+            
           </div>
         </div>
       </section>
@@ -248,10 +213,8 @@ export default function Home() {
             </p>
           </div>
 
-          {loading ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
+          {loading ? <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => <Card key={i} className="animate-pulse">
                   <CardHeader>
                     <div className="h-4 bg-muted rounded w-3/4"></div>
                     <div className="h-6 bg-muted rounded w-full"></div>
@@ -262,20 +225,14 @@ export default function Home() {
                       <div className="h-4 bg-muted rounded w-1/2"></div>
                     </div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : upcomingMatches.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingMatches.map((match) => (
-                <Card key={match.id} className="football-card group hover:shadow-elegant transition-all duration-300 border-2 hover:border-primary/30 overflow-hidden">
+                </Card>)}
+            </div> : upcomingMatches.length > 0 ? <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {upcomingMatches.map(match => <Card key={match.id} className="football-card group hover:shadow-elegant transition-all duration-300 border-2 hover:border-primary/30 overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <CardHeader className="pb-4 space-y-3">
-                    {match.tournament?.name && (
-                      <div className="text-center font-bold text-foreground text-base">
+                    {match.tournament?.name && <div className="text-center font-bold text-foreground text-base">
                         {match.tournament.name}
-                      </div>
-                    )}
+                      </div>}
                     <div className="flex justify-center">
                       <Badge className={`${getSeriesColor(match.series)} font-semibold text-sm`}>
                         {match.series}
@@ -286,14 +243,14 @@ export default function Home() {
                       <span>-</span>
                       <div className="flex items-center">
                         <Calendar className="h-4 w-4 mr-1" />
-                        {format(new Date(match.match_date), "dd MMM", { locale: es })}
+                        {format(new Date(match.match_date), "dd MMM", {
+                    locale: es
+                  })}
                       </div>
-                      {match.match_time && (
-                        <>
+                      {match.match_time && <>
                           <Clock className="h-4 w-4 ml-1" />
                           <span>{match.match_time.substring(0, 5)}</span>
-                        </>
-                      )}
+                        </>}
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
@@ -318,13 +275,9 @@ export default function Home() {
                       </div>
                       <TooltipProvider>
                         <div className="flex justify-center gap-2">
-                          {teamResults[match.team_id]?.length > 0 ? (
-                            teamResults[match.team_id].map((result, idx) => (
-                              <Tooltip key={idx}>
+                          {teamResults[match.team_id]?.length > 0 ? teamResults[match.team_id].map((result, idx) => <Tooltip key={idx}>
                                 <TooltipTrigger>
-                                  <div
-                                    className={`w-8 h-8 rounded-full ${getResultColor(result.result)} flex items-center justify-center text-white text-xs font-bold shadow-sm hover:scale-110 transition-transform cursor-pointer`}
-                                  >
+                                  <div className={`w-8 h-8 rounded-full ${getResultColor(result.result)} flex items-center justify-center text-white text-xs font-bold shadow-sm hover:scale-110 transition-transform cursor-pointer`}>
                                     {result.result === 'win' ? 'G' : result.result === 'loss' ? 'P' : 'E'}
                                   </div>
                                 </TooltipTrigger>
@@ -334,20 +287,13 @@ export default function Home() {
                                     <p className="text-sm">{result.teamScore} - {result.opponentScore}</p>
                                   </div>
                                 </TooltipContent>
-                              </Tooltip>
-                            ))
-                          ) : (
-                            <div className="text-xs text-muted-foreground">Sin datos</div>
-                          )}
+                              </Tooltip>) : <div className="text-xs text-muted-foreground">Sin datos</div>}
                         </div>
                       </TooltipProvider>
                     </div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="text-center py-12">
+                </Card>)}
+            </div> : <Card className="text-center py-12">
               <CardContent>
                 <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-semibold mb-2">No hay partidos programados</h3>
@@ -355,8 +301,7 @@ export default function Home() {
                   Los próximos partidos se anunciarán pronto
                 </p>
               </CardContent>
-            </Card>
-          )}
+            </Card>}
         </div>
       </section>
 
@@ -372,22 +317,15 @@ export default function Home() {
               suspendidos y la galería de nuestros mejores momentos.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <a 
-                href="/standings" 
-                className="rounded-md bg-white px-6 py-3 text-sm font-semibold text-primary shadow-sm hover:bg-gray-50 transition-colors"
-              >
+              <a href="/standings" className="rounded-md bg-white px-6 py-3 text-sm font-semibold text-primary shadow-sm hover:bg-gray-50 transition-colors">
                 Ver Posiciones
               </a>
-              <a 
-                href="/gallery" 
-                className="rounded-md border border-white px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
-              >
+              <a href="/gallery" className="rounded-md border border-white px-6 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
                 Explorar Galería
               </a>
             </div>
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 }
