@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import Home from "./pages/Home";
 import Standings from "./pages/Standings";
+import Fixture from "./pages/Fixture";
 import Tribunal from "./pages/Tribunal";
 import Gallery from "./pages/Gallery";
 import About from "./pages/About";
@@ -24,6 +25,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/standings" element={<Standings />} />
+            <Route path="/fixture" element={<Fixture />} />
             <Route path="/tribunal" element={<Tribunal />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/about" element={<About />} />

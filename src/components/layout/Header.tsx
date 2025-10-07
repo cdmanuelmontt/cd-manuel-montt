@@ -9,6 +9,9 @@ const navigation = [{
   name: "Tabla de Posiciones",
   href: "/standings"
 }, {
+  name: "Fixture",
+  href: "/fixture"
+}, {
   name: "Tribunal",
   href: "/tribunal"
 }, {
