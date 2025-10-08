@@ -21,6 +21,10 @@ interface SuspendedPlayer {
   reason: string;
 }
 
+const toTitleCase = (str: string) => {
+  return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
+
 export default function Tribunal() {
   const [suspendedPlayers, setSuspendedPlayers] = useState<SuspendedPlayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,7 +140,7 @@ export default function Tribunal() {
                           {player.name}
                         </TableCell>
                         <TableCell className="font-medium text-muted-foreground">
-                          {player.team}
+                          {toTitleCase(player.team)}
                         </TableCell>
                         <TableCell>
                           <Badge className={getSeriesColor(player.series)}>
@@ -190,28 +194,6 @@ export default function Tribunal() {
           </CardContent>
         </Card>
 
-        {/* Legend */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="text-lg">Leyenda de Severidad</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center space-x-2">
-                <Badge className="bg-yellow-500 text-black">1-2 fechas</Badge>
-                <span className="text-sm text-muted-foreground">Suspensión leve</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Badge className="bg-orange-500 text-white">3-4 fechas</Badge>
-                <span className="text-sm text-muted-foreground">Suspensión moderada</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Badge className="bg-red-500 text-white">5+ fechas</Badge>
-                <span className="text-sm text-muted-foreground">Suspensión severa</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
