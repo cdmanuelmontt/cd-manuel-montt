@@ -114,8 +114,8 @@ export default function Fixture() {
         .from('matches')
         .select(`
           *,
-          home_team:home_team_id(name),
-          away_team:away_team_id(name)
+          home_team:teams!matches_home_team_id_fkey(name),
+          away_team:teams!matches_away_team_id_fkey(name)
         `)
         .eq('tournament_id', selectedTournament)
         .order('round', { ascending: true });
@@ -186,7 +186,7 @@ export default function Fixture() {
 
       // Sort rounds within each series
       Object.keys(groupedMatches).forEach(seriesKey => {
-        groupedMatches[seriesKey].sort((a, b) => a.round - b.round);
+        groupedMatches[seriesKey].sort((a, b) => parseInt(a.round) - parseInt(b.round));
       });
 
       setMatches(groupedMatches);

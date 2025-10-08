@@ -15,6 +15,7 @@ import { AlertTriangle, Users, Calendar } from "lucide-react";
 interface SuspendedPlayer {
   id: string;
   name: string;
+  team: string;
   series: string;
   remaining_matches: number;
   reason: string;
@@ -32,12 +33,22 @@ export default function Tribunal() {
     try {
       const { data, error } = await supabase
         .from('suspended_players')
-        .select('*')
+        .select('*, teams(name)')
         .gt('remaining_matches', 0)
         .order('remaining_matches', { ascending: false });
 
       if (error) throw error;
-      setSuspendedPlayers(data || []);
+      
+      const formattedData = (data || []).map((player: any) => ({
+        id: player.id,
+        name: player.name,
+        team: player.teams?.name || 'Sin equipo',
+        series: player.series,
+        remaining_matches: player.remaining_matches,
+        reason: player.reason
+      }));
+      
+      setSuspendedPlayers(formattedData);
     } catch (error) {
       console.error('Error fetching suspended players:', error);
     } finally {
@@ -112,9 +123,10 @@ export default function Tribunal() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Jugador</TableHead>
+                      <TableHead>Equipo</TableHead>
                       <TableHead>Serie</TableHead>
                       <TableHead className="text-center">Fechas Restantes</TableHead>
-                      <TableHead>Motivo</TableHead>
+                      <TableHead className="hidden md:table-cell">Motivo</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -123,10 +135,13 @@ export default function Tribunal() {
                         <TableCell className="font-medium">
                           {player.name}
                         </TableCell>
+                        <TableCell className="font-medium text-muted-foreground">
+                          {player.team}
+                        </TableCell>
                         <TableCell>
-              <Badge className={getSeriesColor(player.series)}>
-                {['Adultos A', 'Adultos B'].includes(player.series) ? 'Adultos' : player.series}
-              </Badge>
+                          <Badge className={getSeriesColor(player.series)}>
+                            {['Adultos A', 'Adultos B'].includes(player.series) ? 'Adultos' : player.series}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge className={getSeverityColor(player.remaining_matches)}>
@@ -134,7 +149,7 @@ export default function Tribunal() {
                             {player.remaining_matches} {player.remaining_matches === 1 ? 'fecha' : 'fechas'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="text-muted-foreground hidden md:table-cell">
                           {player.reason || 'No especificado'}
                         </TableCell>
                       </TableRow>
