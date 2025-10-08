@@ -202,7 +202,7 @@ export default function Home() {
       </section>
 
       {/* Próximos Partidos */}
-      <section className="py-16 bg-background">
+      <section id="proximos-partidos" className="py-16 bg-background">
         <div className="mx-auto max-w-7xl px-4 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
