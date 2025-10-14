@@ -16,6 +16,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Standing {
   id: string;
@@ -32,17 +39,72 @@ interface Standing {
   };
 }
 
-const series = ['Adultos', 'Senior', 'Super Senior'];
+interface Tournament {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+}
+
+interface Series {
+  id: string;
+  name: string;
+  position: number;
+}
 
 export default function Standings() {
   const [standings, setStandings] = useState<Record<string, Standing[]>>({});
   const [loading, setLoading] = useState(true);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [selectedTournament, setSelectedTournament] = useState<string>("");
+  const [seriesList, setSeriesList] = useState<Series[]>([]);
 
   useEffect(() => {
-    fetchStandings();
+    fetchTournamentsAndSeries();
   }, []);
 
+  useEffect(() => {
+    if (selectedTournament) {
+      fetchStandings();
+    }
+  }, [selectedTournament]);
+
+  const fetchTournamentsAndSeries = async () => {
+    try {
+      // Fetch tournaments
+      const { data: tournamentsData, error: tournamentsError } = await supabase
+        .from('tournaments')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (tournamentsError) throw tournamentsError;
+
+      setTournaments(tournamentsData || []);
+      
+      // Set default tournament (newest active)
+      if (tournamentsData && tournamentsData.length > 0) {
+        setSelectedTournament(tournamentsData[0].id);
+      }
+
+      // Fetch series ordered by position
+      const { data: seriesData, error: seriesError } = await supabase
+        .from('series' as any)
+        .select('id, name, position')
+        .order('position', { ascending: true });
+
+      if (seriesError) throw seriesError;
+
+      setSeriesList((seriesData as unknown as Series[]) || []);
+    } catch (error) {
+      console.error('Error fetching tournaments and series:', error);
+    }
+  };
+
   const fetchStandings = async () => {
+    if (!selectedTournament) return;
+    
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('standings')
@@ -50,6 +112,7 @@ export default function Standings() {
           *,
           team:team_id(name)
         `)
+        .eq('tournament_id', selectedTournament)
         .order('position', { ascending: true });
 
       if (error) throw error;
@@ -92,7 +155,7 @@ export default function Standings() {
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Tabla de Posiciones
           </h1>
@@ -101,22 +164,42 @@ export default function Standings() {
           </p>
         </div>
 
-        <Tabs defaultValue="Adultos" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            {series.map((serie) => (
-              <TabsTrigger key={serie} value={serie} className="text-sm">
-                {serie}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {/* Tournament Filter */}
+        <div className="mb-8 max-w-md mx-auto">
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Seleccionar Torneo
+          </label>
+          <Select value={selectedTournament} onValueChange={setSelectedTournament}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Selecciona un torneo" />
+            </SelectTrigger>
+            <SelectContent>
+              {tournaments.map((tournament) => (
+                <SelectItem key={tournament.id} value={tournament.id}>
+                  {tournament.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-          {series.map((serie) => (
-            <TabsContent key={serie} value={serie}>
+        {seriesList.length > 0 && (
+          <Tabs defaultValue={seriesList[0]?.name} className="w-full">
+            <TabsList className={`grid w-full mb-8`} style={{ gridTemplateColumns: `repeat(${seriesList.length}, minmax(0, 1fr))` }}>
+              {seriesList.map((serie) => (
+                <TabsTrigger key={serie.id} value={serie.name} className="text-sm">
+                  {serie.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {seriesList.map((serie) => (
+            <TabsContent key={serie.id} value={serie.name}>
               <Card className="football-card">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Trophy className="h-5 w-5 text-primary" />
-                    <span>Serie {serie}</span>
+                    <span>Serie {serie.name}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -131,7 +214,7 @@ export default function Standings() {
                         </div>
                       ))}
                     </div>
-                  ) : standings[serie] && standings[serie].length > 0 ? (
+                  ) : standings[serie.name] && standings[serie.name].length > 0 ? (
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
@@ -150,7 +233,7 @@ export default function Standings() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {standings[serie].map((standing) => (
+                          {standings[serie.name].map((standing) => (
                             <TableRow key={standing.id} className="hover:bg-muted/50">
                               <TableCell className="md:table-cell hidden">
                                 <div className="flex items-center space-x-2">
@@ -209,7 +292,7 @@ export default function Standings() {
                       <Trophy className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                       <h3 className="text-lg font-semibold mb-2">No hay datos disponibles</h3>
                       <p className="text-muted-foreground">
-                        Las posiciones de la serie {serie} se actualizarán pronto
+                        Las posiciones de la serie {serie.name} se actualizarán pronto
                       </p>
                     </div>
                   )}
@@ -218,6 +301,7 @@ export default function Standings() {
             </TabsContent>
           ))}
         </Tabs>
+        )}
       </div>
     </div>
   );
