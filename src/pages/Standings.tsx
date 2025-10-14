@@ -86,16 +86,6 @@ export default function Standings() {
       if (tournamentsData && tournamentsData.length > 0) {
         setSelectedTournament(tournamentsData[0].id);
       }
-
-      // Fetch series ordered by position
-      const { data: seriesData, error: seriesError } = await supabase
-        .from('series' as any)
-        .select('id, name, position')
-        .order('position', { ascending: true });
-
-      if (seriesError) throw seriesError;
-
-      setSeriesList((seriesData as unknown as Series[]) || []);
     } catch (error) {
       console.error('Error fetching tournaments and series:', error);
     }
@@ -106,6 +96,30 @@ export default function Standings() {
     
     setLoading(true);
     try {
+      // Fetch series for the selected tournament
+      const { data: tournamentSeriesData, error: seriesError } = await supabase
+        .from('tournament_series' as any)
+        .select(`
+          series_id,
+          series:series_id (
+            id,
+            name,
+            position
+          )
+        `)
+        .eq('tournament_id', selectedTournament);
+
+      if (seriesError) throw seriesError;
+
+      // Extract and sort series by position
+      const seriesForTournament = (tournamentSeriesData || [])
+        .map((ts: any) => ts.series)
+        .filter((s: any) => s !== null)
+        .sort((a: any, b: any) => a.position - b.position);
+
+      setSeriesList(seriesForTournament as unknown as Series[]);
+
+      // Fetch standings for the selected tournament
       const { data, error } = await supabase
         .from('standings')
         .select(`
