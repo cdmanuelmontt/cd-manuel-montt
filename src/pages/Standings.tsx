@@ -118,10 +118,13 @@ export default function Standings() {
         .sort((a: any, b: any) => a.position - b.position);
 
       setSeriesList(seriesForTournament as unknown as Series[]);
+      
+      // Create series map for lookup
+      const seriesMap = new Map((seriesForTournament as any[]).map(s => [s.id, s.name]));
 
       // Fetch standings for the selected tournament
       const { data, error } = await supabase
-        .from('standings')
+        .from('standings' as any)
         .select(`
           *,
           team:team_id(name)
@@ -131,18 +134,16 @@ export default function Standings() {
 
       if (error) throw error;
 
-      // Group by series, merging Adultos A and B into 'Adultos'
-      const groupedStandings = (data || []).reduce((acc, standing) => {
-        let key = standing.series;
-        if (key === 'Adultos A' || key === 'Adultos B') {
-          key = 'Adultos';
+      // Group by series name
+      const groupedStandings: Record<string, any[]> = {};
+      for (const standing of data || []) {
+        const seriesName = seriesMap.get(standing.series_id) || 'Unknown';
+        
+        if (!groupedStandings[seriesName]) {
+          groupedStandings[seriesName] = [];
         }
-        if (!acc[key]) {
-          acc[key] = [];
-        }
-        acc[key].push(standing);
-        return acc;
-      }, {} as Record<string, Standing[]>);
+        groupedStandings[seriesName].push(standing);
+      }
 
       setStandings(groupedStandings);
     } catch (error) {

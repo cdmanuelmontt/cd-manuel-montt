@@ -16,7 +16,9 @@ interface SuspendedPlayer {
   id: string;
   name: string;
   team: string;
-  series: string;
+  series: {
+    name: string;
+  };
   remaining_matches: number;
   reason: string;
 }
@@ -35,8 +37,15 @@ export default function Tribunal() {
 
   const fetchSuspendedPlayers = async () => {
     try {
+      // Fetch series first
+      const { data: seriesData } = await supabase
+        .from('series')
+        .select('id, name');
+      
+      const seriesMap = new Map((seriesData || []).map((s: any) => [s.id, s.name]));
+
       const { data, error } = await supabase
-        .from('suspended_players')
+        .from('suspended_players' as any)
         .select('*, teams(name)')
         .gt('remaining_matches', 0)
         .order('remaining_matches', { ascending: false });
@@ -47,7 +56,9 @@ export default function Tribunal() {
         id: player.id,
         name: player.name,
         team: player.teams?.name || 'Sin equipo',
-        series: player.series,
+        series: {
+          name: seriesMap.get(player.series_id) || 'Unknown'
+        },
         remaining_matches: player.remaining_matches,
         reason: player.reason
       }));
@@ -143,8 +154,8 @@ export default function Tribunal() {
                           {toTitleCase(player.team)}
                         </TableCell>
                         <TableCell>
-                          <Badge className={getSeriesColor(player.series)}>
-                            {['Adultos A', 'Adultos B'].includes(player.series) ? 'Adultos' : player.series}
+                          <Badge className={getSeriesColor(player.series?.name || '')}>
+                            {player.series?.name || 'N/A'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">

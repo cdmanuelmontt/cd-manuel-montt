@@ -18,7 +18,9 @@ interface Match {
   match_date: string;
   match_time: string;
   venue: string;
-  series: string;
+  series: {
+    name: string;
+  };
   round: string;
   tournament: {
     name: string;
@@ -78,40 +80,48 @@ export default function Home() {
   };
   const fetchUpcomingMatches = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('next_matches' as any).select(`
+      // Fetch series first
+      const { data: seriesData } = await supabase
+        .from('series')
+        .select('id, name');
+      
+      const seriesMap = new Map((seriesData || []).map(s => [s.id, s.name]));
+
+      const { data, error } = await supabase
+        .from('next_matches' as any)
+        .select(`
           id,
           match_date,
           match_time,
           venue,
-          series,
           round,
           team_id,
+          series_id,
           team:teams!next_matches_team_id_fkey(id, name),
           vs_team:teams!next_matches_vs_team_id_fkey(name),
           tournament:tournaments(name)
-        `).order('match_date', {
-        ascending: true
-      });
+        `)
+        .order('match_date', { ascending: true });
+
       if (error) throw error;
-      const matches = data as any || [];
+
+      // Add series name to each match
+      const matchesWithSeries = (data || []).map((match: any) => ({
+        ...match,
+        series: {
+          name: seriesMap.get(match.series_id) || 'Unknown'
+        }
+      }));
 
       // Define the same series order as in Fixture page
       const seriesOrder = ['Infantil', 'Adultos', 'Senior', 'Super Senior', 'Dorada'];
 
       // Sort matches by series order, then by match date
-      const sortedMatches = matches.sort((a: any, b: any) => {
-        // Normalize series names (convert Adultos A/B to Adultos)
-        let seriesA = a.series;
-        let seriesB = b.series;
-        if (seriesA === 'Adultos A' || seriesA === 'Adultos B') {
-          seriesA = 'Adultos';
-        }
-        if (seriesB === 'Adultos A' || seriesB === 'Adultos B') {
-          seriesB = 'Adultos';
-        }
+      const sortedMatches = matchesWithSeries.sort((a: any, b: any) => {
+        // Get series names from the series object
+        const seriesA = a.series?.name || '';
+        const seriesB = b.series?.name || '';
+        
         const indexA = seriesOrder.indexOf(seriesA);
         const indexB = seriesOrder.indexOf(seriesB);
 
@@ -234,8 +244,8 @@ export default function Home() {
                         {match.tournament.name}
                       </div>}
                     <div className="flex justify-center">
-                      <Badge className={`${getSeriesColor(match.series)} font-semibold text-sm`}>
-                        {match.series}
+                      <Badge className={`${getSeriesColor(match.series?.name || '')} font-semibold text-sm`}>
+                        {match.series?.name || 'N/A'}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">

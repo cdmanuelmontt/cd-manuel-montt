@@ -40,7 +40,10 @@ interface Match {
   match_date: string;
   match_time: string;
   venue: string;
-  series: string;
+  series: {
+    id: string;
+    name: string;
+  };
   status: string;
   home_score: number | null;
   away_score: number | null;
@@ -110,8 +113,15 @@ export default function Fixture() {
   const fetchMatches = async () => {
     setLoading(true);
     try {
+      // Fetch series first
+      const { data: seriesData } = await supabase
+        .from('series')
+        .select('id, name');
+      
+      const seriesMap = new Map((seriesData || []).map((s: any) => [s.id, s.name]));
+
       const { data, error } = await supabase
-        .from('matches')
+        .from('matches' as any)
         .select(`
           *,
           home_team:teams!matches_home_team_id_fkey(name),
@@ -122,15 +132,20 @@ export default function Fixture() {
 
       if (error) throw error;
 
+      // Add series name to each match
+      const matchesWithSeries = (data || []).map((match: any) => ({
+        ...match,
+        series: {
+          id: match.series_id,
+          name: seriesMap.get(match.series_id) || 'Unknown'
+        }
+      }));
+
+      if (error) throw error;
+
       // Get unique series from the matches and sort them in the desired order
       const seriesOrder = ['Infantil', 'Adultos', 'Senior', 'Super Senior', 'Dorada'];
-      const uniqueSeriesSet = new Set((data || []).map(match => {
-        let series = match.series;
-        if (series === 'Adultos A' || series === 'Adultos B') {
-          series = 'Adultos';
-        }
-        return series;
-      }));
+      const uniqueSeriesSet = new Set(matchesWithSeries.map((match: any) => match.series?.name || '').filter((name: string) => name !== ''));
       
       // Filter and sort series according to the desired order
       const sortedSeries = seriesOrder.filter(series => uniqueSeriesSet.has(series));
@@ -143,15 +158,12 @@ export default function Fixture() {
 
       // Get unique rounds per series and sort them numerically
       const roundsBySeries: Record<string, string[]> = {};
-      (data || []).forEach(match => {
-        let series = match.series;
-        if (series === 'Adultos A' || series === 'Adultos B') {
-          series = 'Adultos';
-        }
-        if (!roundsBySeries[series]) {
+      matchesWithSeries.forEach((match: any) => {
+        const series = match.series?.name || '';
+        if (series && !roundsBySeries[series]) {
           roundsBySeries[series] = [];
         }
-        if (!roundsBySeries[series].includes(match.round)) {
+        if (series && !roundsBySeries[series].includes(match.round)) {
           roundsBySeries[series].push(match.round);
         }
       });
@@ -164,17 +176,14 @@ export default function Fixture() {
       setAvailableRounds(roundsBySeries);
 
       // Group matches by series and round
-      const groupedMatches = (data || []).reduce((acc, match) => {
-        let key = match.series;
-        if (key === 'Adultos A' || key === 'Adultos B') {
-          key = 'Adultos';
-        }
+      const groupedMatches = matchesWithSeries.reduce((acc: any, match: any) => {
+        const key = match.series?.name || 'Unknown';
         
         if (!acc[key]) {
           acc[key] = [];
         }
 
-        let roundData = acc[key].find(r => r.round === match.round);
+        let roundData = acc[key].find((r: any) => r.round === match.round);
         if (!roundData) {
           roundData = { round: match.round, matches: [] };
           acc[key].push(roundData);
