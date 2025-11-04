@@ -106,6 +106,11 @@ export default function Fixture() {
     }
   }, [selectedTournament]);
 
+  useEffect(() => {
+    // Reset group filter when series changes
+    setSelectedGroup('all');
+  }, [selectedSeries]);
+
   const fetchTournaments = async () => {
     try {
       const { data, error } = await supabase
@@ -285,8 +290,8 @@ export default function Fixture() {
           </p>
         </div>
 
-        {/* Tournament and Group Selectors */}
-        <div className="mb-8 flex flex-col sm:flex-row justify-center gap-4">
+        {/* Tournament Selector */}
+        <div className="mb-8 flex justify-center">
           <div className="w-64">
             <Select value={selectedTournament} onValueChange={setSelectedTournament}>
               <SelectTrigger className="w-full">
@@ -301,23 +306,6 @@ export default function Fixture() {
               </SelectContent>
             </Select>
           </div>
-          {selectedSeries && availableGroups[selectedSeries] && availableGroups[selectedSeries].length > 0 && (
-            <div className="w-64">
-              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecciona un grupo" />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  <SelectItem value="all">Todos los grupos</SelectItem>
-                  {availableGroups[selectedSeries].map((group) => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
         </div>
 
         {availableSeries.length > 0 ? (
@@ -335,7 +323,6 @@ export default function Fixture() {
                   key={serie} 
                   value={serie} 
                   className="text-sm"
-                  onClick={() => setSelectedGroup('all')}
                 >
                   {serie}
                 </TabsTrigger>
@@ -344,6 +331,27 @@ export default function Fixture() {
 
           {availableSeries.map((serie) => (
             <TabsContent key={serie} value={serie}>
+              {/* Group Filter - Only show if this series has groups */}
+              {availableGroups[serie] && availableGroups[serie].length > 0 && (
+                <div className="mb-6 flex justify-center">
+                  <div className="w-64">
+                    <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecciona un grupo" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background z-50">
+                        <SelectItem value="all">Todos los grupos</SelectItem>
+                        {availableGroups[serie].map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-6">
                 {loading ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
