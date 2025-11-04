@@ -49,6 +49,13 @@ interface Match {
   away_score: number | null;
   round: string;
   tournament_id: string;
+  phase_id: string | null;
+  group_id: string | null;
+  group?: {
+    id: string;
+    group_name: string;
+    group_order: number;
+  };
   home_team: {
     name: string;
   };
@@ -62,6 +69,13 @@ interface MatchByRound {
   matches: Match[];
 }
 
+interface MatchByGroup {
+  groupId: string | null;
+  groupName: string;
+  groupOrder: number;
+  rounds: MatchByRound[];
+}
+
 interface Tournament {
   id: string;
   name: string;
@@ -72,13 +86,13 @@ interface Tournament {
 }
 
 export default function Fixture() {
-  const [matches, setMatches] = useState<Record<string, MatchByRound[]>>({});
+  const [matches, setMatches] = useState<Record<string, MatchByGroup[]>>({});
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [availableSeries, setAvailableSeries] = useState<string[]>([]);
-  const [availableRounds, setAvailableRounds] = useState<Record<string, string[]>>({});
+  const [availableGroups, setAvailableGroups] = useState<Record<string, Array<{id: string, name: string}>>>({});
   const [loading, setLoading] = useState(true);
   const [selectedTournament, setSelectedTournament] = useState<string>('');
-  const [selectedRound, setSelectedRound] = useState<string>('all');
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [selectedSeries, setSelectedSeries] = useState<string>('');
 
   useEffect(() => {
@@ -87,7 +101,7 @@ export default function Fixture() {
 
   useEffect(() => {
     if (selectedTournament) {
-      setSelectedRound('all'); // Reset round filter when tournament changes
+      setSelectedGroup('all'); // Reset group filter when tournament changes
       fetchMatches();
     }
   }, [selectedTournament]);
@@ -115,10 +129,26 @@ export default function Fixture() {
     try {
       // Fetch series first
       const { data: seriesData } = await supabase
-        .from('series')
-        .select('id, name');
+        .from('series' as any)
+        .select('id, name, position')
+        .order('position', { ascending: true });
       
       const seriesMap = new Map((seriesData || []).map((s: any) => [s.id, s.name]));
+
+      // Fetch tournament_series to get only series that belong to this tournament
+      const { data: tournamentSeriesData } = await supabase
+        .from('tournament_series' as any)
+        .select('series_id')
+        .eq('tournament_id', selectedTournament);
+
+      const tournamentSeriesIds = new Set((tournamentSeriesData || []).map((ts: any) => ts.series_id));
+
+      // Fetch groups
+      const { data: groupsData } = await supabase
+        .from('phase_groups' as any)
+        .select('id, group_name, group_order, phase_id');
+
+      const groupsMap = new Map((groupsData || []).map((g: any) => [g.id, { id: g.id, group_name: g.group_name, group_order: g.group_order }]));
 
       const { data, error } = await supabase
         .from('matches' as any)
@@ -132,23 +162,21 @@ export default function Fixture() {
 
       if (error) throw error;
 
-      // Add series name to each match
-      const matchesWithSeries = (data || []).map((match: any) => ({
+      // Add series name and group info to each match
+      const matchesWithDetails = (data || []).map((match: any) => ({
         ...match,
         series: {
           id: match.series_id,
           name: seriesMap.get(match.series_id) || 'Unknown'
-        }
+        },
+        group: match.group_id ? groupsMap.get(match.group_id) : null
       }));
 
-      if (error) throw error;
-
-      // Get unique series from the matches and sort them in the desired order
-      const seriesOrder = ['Infantil', 'Adultos', 'Senior', 'Super Senior', 'Dorada'];
-      const uniqueSeriesSet = new Set(matchesWithSeries.map((match: any) => match.series?.name || '').filter((name: string) => name !== ''));
+      // Filter only series that belong to this tournament and sort them
+      const sortedSeries = (seriesData || [])
+        .filter((s: any) => tournamentSeriesIds.has(s.id))
+        .map((s: any) => s.name);
       
-      // Filter and sort series according to the desired order
-      const sortedSeries = seriesOrder.filter(series => uniqueSeriesSet.has(series));
       setAvailableSeries(sortedSeries);
       
       // Set the first series as selected by default if not already set
@@ -156,46 +184,76 @@ export default function Fixture() {
         setSelectedSeries(sortedSeries[0]);
       }
 
-      // Get unique rounds per series and sort them numerically
-      const roundsBySeries: Record<string, string[]> = {};
-      matchesWithSeries.forEach((match: any) => {
-        const series = match.series?.name || '';
-        if (series && !roundsBySeries[series]) {
-          roundsBySeries[series] = [];
-        }
-        if (series && !roundsBySeries[series].includes(match.round)) {
-          roundsBySeries[series].push(match.round);
+      // Get available groups per series
+      const groupsBySeries: Record<string, Array<{id: string, name: string}>> = {};
+      matchesWithDetails.forEach((match: any) => {
+        const seriesName = match.series?.name || '';
+        if (seriesName && match.group) {
+          if (!groupsBySeries[seriesName]) {
+            groupsBySeries[seriesName] = [];
+          }
+          const existingGroup = groupsBySeries[seriesName].find(g => g.id === match.group.id);
+          if (!existingGroup) {
+            groupsBySeries[seriesName].push({
+              id: match.group.id,
+              name: match.group.group_name
+            });
+          }
         }
       });
-      
-      // Sort rounds numerically for each series
-      Object.keys(roundsBySeries).forEach(series => {
-        roundsBySeries[series].sort((a, b) => parseInt(a) - parseInt(b));
-      });
-      
-      setAvailableRounds(roundsBySeries);
 
-      // Group matches by series and round
-      const groupedMatches = matchesWithSeries.reduce((acc: any, match: any) => {
-        const key = match.series?.name || 'Unknown';
+      // Sort groups by group_order
+      Object.keys(groupsBySeries).forEach(seriesName => {
+        groupsBySeries[seriesName].sort((a, b) => {
+          const groupA = groupsMap.get(a.id);
+          const groupB = groupsMap.get(b.id);
+          return (groupA?.group_order || 0) - (groupB?.group_order || 0);
+        });
+      });
+
+      setAvailableGroups(groupsBySeries);
+
+      // Group matches by series, then by group, then by round
+      const groupedMatches = matchesWithDetails.reduce((acc: any, match: any) => {
+        const seriesKey = match.series?.name || 'Unknown';
         
-        if (!acc[key]) {
-          acc[key] = [];
+        if (!acc[seriesKey]) {
+          acc[seriesKey] = [];
         }
 
-        let roundData = acc[key].find((r: any) => r.round === match.round);
+        const groupId = match.group_id || null;
+        const groupName = match.group ? match.group.group_name : 'General';
+        const groupOrder = match.group ? match.group.group_order : 0;
+
+        let groupData = acc[seriesKey].find((g: any) => g.groupId === groupId);
+        if (!groupData) {
+          groupData = { 
+            groupId, 
+            groupName, 
+            groupOrder,
+            rounds: [] 
+          };
+          acc[seriesKey].push(groupData);
+        }
+
+        let roundData = groupData.rounds.find((r: any) => r.round === match.round);
         if (!roundData) {
           roundData = { round: match.round, matches: [] };
-          acc[key].push(roundData);
+          groupData.rounds.push(roundData);
         }
         
         roundData.matches.push(match);
         return acc;
-      }, {} as Record<string, MatchByRound[]>);
+      }, {} as Record<string, MatchByGroup[]>);
 
-      // Sort rounds within each series
+      // Sort groups and rounds within each series
       Object.keys(groupedMatches).forEach(seriesKey => {
-        groupedMatches[seriesKey].sort((a, b) => parseInt(a.round) - parseInt(b.round));
+        // Sort groups by group_order
+        groupedMatches[seriesKey].sort((a, b) => a.groupOrder - b.groupOrder);
+        // Sort rounds within each group
+        groupedMatches[seriesKey].forEach((group: MatchByGroup) => {
+          group.rounds.sort((a, b) => parseInt(a.round) - parseInt(b.round));
+        });
       });
 
       setMatches(groupedMatches);
@@ -227,7 +285,7 @@ export default function Fixture() {
           </p>
         </div>
 
-        {/* Tournament and Round Selectors */}
+        {/* Tournament and Group Selectors */}
         <div className="mb-8 flex flex-col sm:flex-row justify-center gap-4">
           <div className="w-64">
             <Select value={selectedTournament} onValueChange={setSelectedTournament}>
@@ -243,21 +301,23 @@ export default function Fixture() {
               </SelectContent>
             </Select>
           </div>
-          <div className="w-64">
-            <Select value={selectedRound} onValueChange={setSelectedRound}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecciona una jornada" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                <SelectItem value="all">Todas las jornadas</SelectItem>
-                {selectedSeries && availableRounds[selectedSeries]?.map((round) => (
-                  <SelectItem key={round} value={round}>
-                    Jornada {round}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {selectedSeries && availableGroups[selectedSeries] && availableGroups[selectedSeries].length > 0 && (
+            <div className="w-64">
+              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecciona un grupo" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="all">Todos los grupos</SelectItem>
+                  {availableGroups[selectedSeries].map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {availableSeries.length > 0 ? (
@@ -265,13 +325,18 @@ export default function Fixture() {
             value={selectedSeries || availableSeries[0]} 
             onValueChange={(value) => {
               setSelectedSeries(value);
-              setSelectedRound('all'); // Reset round when switching series
+              setSelectedGroup('all'); // Reset group when switching series
             }}
             className="w-full"
           >
             <TabsList className={`grid w-full mb-8 ${availableSeries.length === 1 ? 'grid-cols-1' : availableSeries.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
               {availableSeries.map((serie) => (
-                <TabsTrigger key={serie} value={serie} className="text-sm">
+                <TabsTrigger 
+                  key={serie} 
+                  value={serie} 
+                  className="text-sm"
+                  onClick={() => setSelectedGroup('all')}
+                >
                   {serie}
                 </TabsTrigger>
               ))}
@@ -299,61 +364,73 @@ export default function Fixture() {
                   </div>
                 ) : matches[serie] && matches[serie].length > 0 ? (
                   (() => {
-                    const filteredRounds = matches[serie].filter(roundData => 
-                      selectedRound === 'all' || roundData.round === selectedRound
+                    const filteredGroups = matches[serie].filter(groupData => 
+                      selectedGroup === 'all' || groupData.groupId === selectedGroup
                     );
                     
-                    return filteredRounds.length > 0 ? (
-                      <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                        {filteredRounds.map((roundData) => (
-                          <Card key={roundData.round} className="football-card h-fit">
-                            <CardHeader>
-                              <CardTitle className="flex items-center">
-                                <div className="flex items-center space-x-2">
-                                  <SoccerBallIcon className="h-5 w-5 text-primary" />
-                                  <span>Fecha {roundData.round}</span>
-                                </div>
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-2">
-                                {roundData.matches.map((match) => (
-                                  <div key={match.id} className="p-2 border rounded-md hover:bg-muted/30 transition-colors">
-                                    <div className="flex items-center justify-between text-xs gap-2 min-w-0">
-                                      <div className="flex-1 min-w-0">
-                                        <span className="font-medium truncate block">
-                                          {match.home_team?.name ? toTitleCase(match.home_team.name) : 'TBD'}
-                                        </span>
+                    return filteredGroups.length > 0 ? (
+                      <div className="space-y-8">
+                        {filteredGroups.map((groupData) => (
+                          <div key={groupData.groupId || 'general'}>
+                            {groupData.groupId && (
+                              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <Trophy className="h-5 w-5 text-primary" />
+                                {groupData.groupName}
+                              </h3>
+                            )}
+                            <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                              {groupData.rounds.map((roundData) => (
+                                <Card key={roundData.round} className="football-card h-fit">
+                                  <CardHeader>
+                                    <CardTitle className="flex items-center">
+                                      <div className="flex items-center space-x-2">
+                                        <SoccerBallIcon className="h-5 w-5 text-primary" />
+                                        <span>Fecha {roundData.round}</span>
                                       </div>
-                                      <div className="flex items-center gap-1 shrink-0">
-                                        <span className="text-sm font-bold text-primary">
-                                          {match.home_score !== null ? match.home_score : '-'}
-                                        </span>
-                                        <span className="text-muted-foreground">-</span>
-                                        <span className="text-sm font-bold text-primary">
-                                          {match.away_score !== null ? match.away_score : '-'}
-                                        </span>
-                                      </div>
-                                      <div className="flex-1 min-w-0 text-right">
-                                        <span className="font-medium truncate block">
-                                          {match.away_team?.name ? toTitleCase(match.away_team.name) : 'TBD'}
-                                        </span>
-                                      </div>
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="space-y-2">
+                                      {roundData.matches.map((match) => (
+                                        <div key={match.id} className="p-2 border rounded-md hover:bg-muted/30 transition-colors">
+                                          <div className="flex items-center justify-between text-xs gap-2 min-w-0">
+                                            <div className="flex-1 min-w-0">
+                                              <span className="font-medium truncate block">
+                                                {match.home_team?.name ? toTitleCase(match.home_team.name) : 'TBD'}
+                                              </span>
+                                            </div>
+                                            <div className="flex items-center gap-1 shrink-0">
+                                              <span className="text-sm font-bold text-primary">
+                                                {match.home_score !== null ? match.home_score : '-'}
+                                              </span>
+                                              <span className="text-muted-foreground">-</span>
+                                              <span className="text-sm font-bold text-primary">
+                                                {match.away_score !== null ? match.away_score : '-'}
+                                              </span>
+                                            </div>
+                                            <div className="flex-1 min-w-0 text-right">
+                                              <span className="font-medium truncate block">
+                                                {match.away_team?.name ? toTitleCase(match.away_team.name) : 'TBD'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
                                     </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </CardContent>
-                          </Card>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                       </div>
                     ) : (
                       <Card className="football-card">
                         <CardContent className="text-center py-12">
                           <SoccerBallIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                          <h3 className="text-lg font-semibold mb-2">No hay partidos para esta jornada</h3>
+                          <h3 className="text-lg font-semibold mb-2">No hay partidos para este grupo</h3>
                           <p className="text-muted-foreground">
-                            No se encontraron partidos para la jornada {selectedRound} en la serie {serie}
+                            No se encontraron partidos para el grupo seleccionado en la serie {serie}
                           </p>
                         </CardContent>
                       </Card>

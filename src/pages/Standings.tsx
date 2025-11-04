@@ -136,7 +136,7 @@ export default function Standings() {
 
       // Group by series name
       const groupedStandings: Record<string, any[]> = {};
-      for (const standing of data || []) {
+      for (const standing of (data || []) as any[]) {
         const seriesName = seriesMap.get(standing.series_id) || 'Unknown';
         
         if (!groupedStandings[seriesName]) {

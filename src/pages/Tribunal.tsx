@@ -39,8 +39,9 @@ export default function Tribunal() {
     try {
       // Fetch series first
       const { data: seriesData } = await supabase
-        .from('series')
-        .select('id, name');
+        .from('series' as any)
+        .select('id, name, position')
+        .order('position', { ascending: true });
       
       const seriesMap = new Map((seriesData || []).map((s: any) => [s.id, s.name]));
 

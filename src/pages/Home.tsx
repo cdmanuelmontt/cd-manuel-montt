@@ -82,10 +82,10 @@ export default function Home() {
     try {
       // Fetch series first
       const { data: seriesData } = await supabase
-        .from('series')
+        .from('series' as any)
         .select('id, name');
       
-      const seriesMap = new Map((seriesData || []).map(s => [s.id, s.name]));
+      const seriesMap = new Map((seriesData || []).map((s: any) => [s.id, s.name]));
 
       const { data, error } = await supabase
         .from('next_matches' as any)
