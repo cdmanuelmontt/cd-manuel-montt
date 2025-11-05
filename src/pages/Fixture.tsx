@@ -343,14 +343,14 @@ export default function Fixture() {
         
         // Create table data for matches
         const tableData = roundData.matches.map(match => [
-          formatDate(match.match_date),
-          match.match_time,
+          match.match_date ? formatDate(match.match_date) : '',
+          match.match_time || '',
           toTitleCase(match.home_team.name),
           match.status === 'completed' 
             ? `${match.home_score} - ${match.away_score}` 
             : 'vs',
           toTitleCase(match.away_team.name),
-          match.venue
+          match.venue || ''
         ]);
         
         autoTable(doc, {
