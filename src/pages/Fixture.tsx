@@ -4,7 +4,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trophy, Icon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Trophy, Icon, Download } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Dynamic import for soccer ball icon from @lucide/lab
 const SoccerBallIcon = ({ className }: { className?: string }) => {
@@ -278,6 +281,108 @@ export default function Fixture() {
     });
   };
 
+  const downloadFixturePDF = () => {
+    const doc = new jsPDF();
+    
+    // Get tournament and series names
+    const tournament = tournaments.find(t => t.id === selectedTournament);
+    const tournamentName = tournament?.name || 'Fixture';
+    
+    // Title
+    doc.setFontSize(18);
+    doc.text(`Fixture - ${tournamentName}`, 14, 20);
+    
+    if (selectedSeries) {
+      doc.setFontSize(12);
+      doc.text(`Serie: ${selectedSeries}`, 14, 28);
+    }
+    
+    let yPosition = selectedSeries ? 35 : 28;
+    
+    // Get matches for selected series
+    const seriesMatches = matches[selectedSeries] || [];
+    
+    // Filter by group if selected
+    const filteredGroups = selectedGroup === 'all' 
+      ? seriesMatches 
+      : seriesMatches.filter(g => g.groupId === selectedGroup);
+    
+    if (filteredGroups.length === 0) {
+      doc.setFontSize(10);
+      doc.text('No hay partidos para mostrar', 14, yPosition);
+      doc.save(`fixture-${tournamentName.replace(/\s+/g, '-')}.pdf`);
+      return;
+    }
+    
+    // Process each group
+    filteredGroups.forEach((groupData, groupIndex) => {
+      if (groupIndex > 0) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      // Group title
+      if (groupData.groupId) {
+        doc.setFontSize(14);
+        doc.text(groupData.groupName, 14, yPosition);
+        yPosition += 8;
+      }
+      
+      // Process each round
+      groupData.rounds.forEach((roundData) => {
+        // Check if we need a new page
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        // Round title
+        doc.setFontSize(12);
+        doc.text(`Jornada ${roundData.round}`, 14, yPosition);
+        yPosition += 5;
+        
+        // Create table data for matches
+        const tableData = roundData.matches.map(match => [
+          formatDate(match.match_date),
+          match.match_time,
+          toTitleCase(match.home_team.name),
+          match.status === 'completed' 
+            ? `${match.home_score} - ${match.away_score}` 
+            : 'vs',
+          toTitleCase(match.away_team.name),
+          match.venue
+        ]);
+        
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Fecha', 'Hora', 'Local', '', 'Visitante', 'Cancha']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: { fillColor: [41, 128, 185], fontSize: 9 },
+          styles: { fontSize: 8, cellPadding: 2 },
+          columnStyles: {
+            0: { cellWidth: 25 },
+            1: { cellWidth: 20 },
+            2: { cellWidth: 45 },
+            3: { cellWidth: 15, halign: 'center' },
+            4: { cellWidth: 45 },
+            5: { cellWidth: 35 }
+          }
+        });
+        
+        yPosition = (doc as any).lastAutoTable.finalY + 10;
+      });
+    });
+    
+    // Save PDF
+    const fileName = selectedGroup !== 'all' && filteredGroups[0]?.groupName
+      ? `fixture-${tournamentName}-${selectedSeries}-${filteredGroups[0].groupName}.pdf`
+      : `fixture-${tournamentName}-${selectedSeries}.pdf`;
+    
+    doc.save(fileName.replace(/\s+/g, '-'));
+  };
+
+
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="mx-auto max-w-7xl px-4 lg:px-8">
@@ -331,10 +436,10 @@ export default function Fixture() {
 
           {availableSeries.map((serie) => (
             <TabsContent key={serie} value={serie}>
-              {/* Group Filter - Only show if this series has groups */}
-              {availableGroups[serie] && availableGroups[serie].length > 0 && (
-                <div className="mb-6 flex justify-center">
-                  <div className="w-64">
+              <div className="mb-6 flex flex-col sm:flex-row justify-center gap-4">
+                {/* Group Filter - Only show if this series has groups */}
+                {availableGroups[serie] && availableGroups[serie].length > 0 && (
+                  <div className="w-full sm:w-64">
                     <Select value={selectedGroup} onValueChange={setSelectedGroup}>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecciona un grupo" />
@@ -349,8 +454,18 @@ export default function Fixture() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              )}
+                )}
+                
+                {/* Download PDF Button */}
+                <Button 
+                  onClick={downloadFixturePDF}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Descargar PDF
+                </Button>
+              </div>
 
               <div className="space-y-6">
                 {loading ? (
