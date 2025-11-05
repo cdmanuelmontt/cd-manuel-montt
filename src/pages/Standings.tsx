@@ -338,7 +338,8 @@ export default function Standings() {
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <div className="overflow-x-auto">
+                            {/* Mobile Table */}
+                            <div className="overflow-x-auto md:hidden">
                               <Table>
                                 <TableHeader>
                                   <TableRow>
@@ -348,10 +349,10 @@ export default function Standings() {
                                     <TableHead className="text-center w-12">DG</TableHead>
                                     <TableHead className="text-center w-12">PJ</TableHead>
                                     <TableHead className="text-center w-12">PG</TableHead>
-                                    <TableHead className="text-center w-12 hidden md:table-cell">PE</TableHead>
-                                    <TableHead className="text-center w-12 hidden md:table-cell">PP</TableHead>
-                                    <TableHead className="text-center w-12 hidden lg:table-cell">GF</TableHead>
-                                    <TableHead className="text-center w-12 hidden lg:table-cell">GC</TableHead>
+                                    <TableHead className="text-center w-12">PE</TableHead>
+                                    <TableHead className="text-center w-12">PP</TableHead>
+                                    <TableHead className="text-center w-12">GF</TableHead>
+                                    <TableHead className="text-center w-12">GC</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -386,17 +387,87 @@ export default function Standings() {
                                       <TableCell className="text-center">
                                         {standing.wins}
                                       </TableCell>
-                                      <TableCell className="text-center hidden md:table-cell">
+                                      <TableCell className="text-center">
                                         {standing.draws}
                                       </TableCell>
-                                      <TableCell className="text-center hidden md:table-cell">
+                                      <TableCell className="text-center">
                                         {standing.losses}
                                       </TableCell>
-                                      <TableCell className="text-center hidden lg:table-cell">
+                                      <TableCell className="text-center">
                                         {standing.goals_for}
                                       </TableCell>
-                                      <TableCell className="text-center hidden lg:table-cell">
+                                      <TableCell className="text-center">
                                         {standing.goals_against}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+
+                            {/* Desktop Table */}
+                            <div className="overflow-x-auto hidden md:block">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="w-12">Pos</TableHead>
+                                    <TableHead>Equipo</TableHead>
+                                    <TableHead className="text-center w-16">PJ</TableHead>
+                                    <TableHead className="text-center w-16">PG</TableHead>
+                                    <TableHead className="text-center w-16">PE</TableHead>
+                                    <TableHead className="text-center w-16">PP</TableHead>
+                                    <TableHead className="text-center w-16">GF</TableHead>
+                                    <TableHead className="text-center w-16">GC</TableHead>
+                                    <TableHead className="text-center w-16">DG</TableHead>
+                                    <TableHead className="text-center w-16">Pts</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {groupData.standings.map((standing) => (
+                                    <TableRow key={standing.id} className="hover:bg-muted/50">
+                                      <TableCell>
+                                        <div className="flex items-center space-x-2">
+                                          <Badge className={`w-6 h-6 rounded-full p-0 flex items-center justify-center text-xs ${getPositionBadge(standing.position)}`}>
+                                            {standing.position}
+                                          </Badge>
+                                          {getPositionIcon(standing.position)}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="font-medium">
+                                        {standing.team?.name ? toTitleCase(standing.team.name) : ''}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {standing.matches_played}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {standing.wins}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {standing.draws}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {standing.losses}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {standing.goals_for}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {standing.goals_against}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <span className={`font-medium ${
+                                          standing.goals_for - standing.goals_against > 0 
+                                            ? 'text-green-600' 
+                                            : standing.goals_for - standing.goals_against < 0 
+                                            ? 'text-red-600' 
+                                            : 'text-gray-600'
+                                        }`}>
+                                          {standing.goals_for - standing.goals_against > 0 ? '+' : ''}
+                                          {standing.goals_for - standing.goals_against}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="text-center font-bold text-primary">
+                                        {standing.points}
                                       </TableCell>
                                     </TableRow>
                                   ))}
