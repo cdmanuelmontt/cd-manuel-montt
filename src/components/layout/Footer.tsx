@@ -1,7 +1,14 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 export function Footer() {
+  const location = useLocation();
+
+  const handleLinkClick = (to: string) => (e: React.MouseEvent) => {
+    if (location.pathname === to) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
   return (
     <footer className="bg-muted/50 border-t">
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
@@ -23,22 +30,22 @@ export function Footer() {
             <h3 className="text-sm font-semibold text-foreground mb-4">Enlaces Rápidos</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/standings" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/standings" onClick={handleLinkClick("/standings")} className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Tabla de Posiciones
                 </Link>
               </li>
               <li>
-                <Link to="/tribunal" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/tribunal" onClick={handleLinkClick("/tribunal")} className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Tribunal
                 </Link>
               </li>
               <li>
-                <Link to="/gallery" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/gallery" onClick={handleLinkClick("/gallery")} className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Galería
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/about" onClick={handleLinkClick("/about")} className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Quiénes Somos
                 </Link>
               </li>
