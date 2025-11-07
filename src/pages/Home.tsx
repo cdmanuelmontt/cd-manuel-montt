@@ -294,12 +294,18 @@ export default function Home() {
                                     {result.result === 'win' ? 'G' : result.result === 'loss' ? 'P' : 'E'}
                                   </div>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                  <div className="text-center">
-                                    <p className="font-semibold">
-                                      {capitalizeTeamName(result.teamName)} vs {capitalizeTeamName(result.opponentName)}
-                                    </p>
-                                    <p className="text-sm">{result.teamScore} - {result.opponentScore}</p>
+                                <TooltipContent className="max-w-[250px]">
+                                  <div className="space-y-2">
+                                    <div className="font-semibold text-center break-words">
+                                      {capitalizeTeamName(result.teamName)}
+                                    </div>
+                                    <div className="text-center text-xs text-muted-foreground">vs</div>
+                                    <div className="font-semibold text-center break-words">
+                                      {capitalizeTeamName(result.opponentName)}
+                                    </div>
+                                    <div className="text-center pt-1 border-t">
+                                      <span className="text-sm font-bold">{result.teamScore} - {result.opponentScore}</span>
+                                    </div>
                                   </div>
                                 </TooltipContent>
                               </Tooltip>) : <div className="text-xs text-muted-foreground">Sin datos</div>}
