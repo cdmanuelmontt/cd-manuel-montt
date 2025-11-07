@@ -29,6 +29,7 @@ interface Match {
 }
 interface MatchResult {
   result: 'win' | 'loss' | 'draw';
+  teamName: string;
   opponentName: string;
   teamScore: number;
   opponentScore: number;
@@ -62,11 +63,13 @@ export default function Home() {
         const isHome = match.home_team_id === teamId;
         const teamScore = isHome ? match.home_score : match.away_score;
         const opponentScore = isHome ? match.away_score : match.home_score;
+        const teamName = isHome ? match.home_team?.name : match.away_team?.name;
         const opponentName = isHome ? match.away_team?.name : match.home_team?.name;
         let result: 'win' | 'loss' | 'draw';
         if (teamScore > opponentScore) result = 'win';else if (teamScore < opponentScore) result = 'loss';else result = 'draw';
         return {
           result,
+          teamName: teamName || 'Desconocido',
           opponentName: opponentName || 'Desconocido',
           teamScore,
           opponentScore
@@ -293,7 +296,9 @@ export default function Home() {
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <div className="text-center">
-                                    <p className="font-semibold">{capitalizeTeamName(result.opponentName)}</p>
+                                    <p className="font-semibold">
+                                      {capitalizeTeamName(result.teamName)} vs {capitalizeTeamName(result.opponentName)}
+                                    </p>
                                     <p className="text-sm">{result.teamScore} - {result.opponentScore}</p>
                                   </div>
                                 </TooltipContent>
