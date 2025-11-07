@@ -284,7 +284,7 @@ export default function Home() {
                     </div>
                     <div className="border-t pt-3 mt-4">
                       <div className="text-xs font-semibold text-center text-muted-foreground mb-2">
-                        Partidos Pasados
+                        Racha últimos partidos
                       </div>
                       <TooltipProvider>
                         <div className="flex justify-center gap-2">
