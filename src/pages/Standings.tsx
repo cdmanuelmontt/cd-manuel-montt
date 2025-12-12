@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, Minus, Users } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -69,6 +69,7 @@ export default function Standings() {
   const [seriesList, setSeriesList] = useState<Series[]>([]);
   const [availableGroups, setAvailableGroups] = useState<Record<string, Array<{id: string, name: string}>>>({});
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [selectedSeries, setSelectedSeries] = useState<string>('');
 
   useEffect(() => {
     fetchTournamentsAndSeries();
@@ -76,9 +77,15 @@ export default function Standings() {
 
   useEffect(() => {
     if (selectedTournament) {
+      setSelectedGroup('all'); // Reset group filter when tournament changes
       fetchStandings();
     }
   }, [selectedTournament]);
+
+  useEffect(() => {
+    // Reset group filter when series changes
+    setSelectedGroup('all');
+  }, [selectedSeries]);
 
   const fetchTournamentsAndSeries = async () => {
     try {
@@ -129,7 +136,17 @@ export default function Standings() {
         .sort((a: any, b: any) => a.position - b.position);
 
       setSeriesList(seriesForTournament as unknown as Series[]);
-      
+
+      // Set the first participating series as selected (lowest position number)
+      // Always update when tournament changes to ensure a valid series is selected
+      const seriesNames = (seriesForTournament as any[]).map(s => s.name);
+      if (seriesNames.length > 0) {
+        if (!selectedSeries || !seriesNames.includes(selectedSeries)) {
+          setSelectedSeries(seriesNames[0]);
+        }
+      } else {
+        setSelectedSeries('');
+      }
       // Create series map for lookup
       const seriesMap = new Map((seriesForTournament as any[]).map(s => [s.id, s.name]));
 
@@ -272,14 +289,32 @@ export default function Standings() {
         </div>
 
         {seriesList.length > 0 && (
-          <Tabs defaultValue={seriesList[0]?.name} className="w-full">
-            <TabsList className={`grid w-full mb-8`} style={{ gridTemplateColumns: `repeat(${seriesList.length}, minmax(0, 1fr))` }}>
-              {seriesList.map((serie) => (
-                <TabsTrigger key={serie.id} value={serie.name} className="text-sm">
-                  {serie.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+          <Tabs 
+            value={selectedSeries || seriesList[0]?.name} 
+            onValueChange={(value) => {
+              setSelectedSeries(value);
+              setSelectedGroup('all'); // Reset group when switching series
+            }}
+            className="w-full"
+          >
+            {/* Series selector with clear label */}
+            <div className="mb-8">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Users className="h-5 w-5 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Selecciona una categoría:</span>
+              </div>
+              <TabsList className={`grid w-full max-w-2xl mx-auto h-auto p-1.5 gap-1 bg-muted/60 ${seriesList.length === 1 ? 'grid-cols-1' : seriesList.length === 2 ? 'grid-cols-2' : seriesList.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-5'}`}>
+                {seriesList.map((serie) => (
+                  <TabsTrigger 
+                    key={serie.id} 
+                    value={serie.name} 
+                    className="relative text-sm font-medium py-2.5 px-4 transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:hover:bg-background/80 data-[state=inactive]:hover:text-foreground rounded-md"
+                  >
+                    {serie.name}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
             {seriesList.map((serie) => (
             <TabsContent key={serie.id} value={serie.name}>
