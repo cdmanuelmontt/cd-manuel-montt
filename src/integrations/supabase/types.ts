@@ -87,13 +87,16 @@ export type Database = {
           away_score: number | null
           away_team_id: string
           created_at: string
+          group_id: string | null
           home_score: number | null
           home_team_id: string
           id: string
           match_date: string | null
+          match_label: string | null
           match_time: string | null
+          phase_id: string | null
           round: string | null
-          series: string
+          series_id: string
           status: string
           tournament_id: string
           updated_at: string
@@ -103,13 +106,16 @@ export type Database = {
           away_score?: number | null
           away_team_id: string
           created_at?: string
+          group_id?: string | null
           home_score?: number | null
           home_team_id: string
           id?: string
           match_date?: string | null
+          match_label?: string | null
           match_time?: string | null
+          phase_id?: string | null
           round?: string | null
-          series: string
+          series_id: string
           status?: string
           tournament_id: string
           updated_at?: string
@@ -119,19 +125,29 @@ export type Database = {
           away_score?: number | null
           away_team_id?: string
           created_at?: string
+          group_id?: string | null
           home_score?: number | null
           home_team_id?: string
           id?: string
           match_date?: string | null
+          match_label?: string | null
           match_time?: string | null
+          phase_id?: string | null
           round?: string | null
-          series?: string
+          series_id?: string
           status?: string
           tournament_id?: string
           updated_at?: string
           venue?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_matches_series"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "matches_away_team_id_fkey"
             columns: ["away_team_id"]
@@ -140,10 +156,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "matches_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "phase_groups"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "matches_home_team_id_fkey"
             columns: ["home_team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_phases"
             referencedColumns: ["id"]
           },
           {
@@ -162,7 +192,7 @@ export type Database = {
           match_date: string
           match_time: string | null
           round: string | null
-          series: string
+          series_id: string
           team_id: string
           tournament_id: string
           updated_at: string
@@ -175,7 +205,7 @@ export type Database = {
           match_date: string
           match_time?: string | null
           round?: string | null
-          series: string
+          series_id: string
           team_id: string
           tournament_id: string
           updated_at?: string
@@ -188,7 +218,7 @@ export type Database = {
           match_date?: string
           match_time?: string | null
           round?: string | null
-          series?: string
+          series_id?: string
           team_id?: string
           tournament_id?: string
           updated_at?: string
@@ -196,6 +226,13 @@ export type Database = {
           vs_team_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_next_matches_series"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "next_matches_team_id_fkey"
             columns: ["team_id"]
@@ -215,6 +252,38 @@ export type Database = {
             columns: ["vs_team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      phase_groups: {
+        Row: {
+          created_at: string
+          group_name: string
+          group_order: number
+          id: string
+          phase_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_name: string
+          group_order: number
+          id?: string
+          phase_id: string
+        }
+        Update: {
+          created_at?: string
+          group_name?: string
+          group_order?: number
+          id?: string
+          phase_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "phase_groups_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_phases"
             referencedColumns: ["id"]
           },
         ]
@@ -240,18 +309,46 @@ export type Database = {
         }
         Relationships: []
       }
+      series: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       standings: {
         Row: {
           created_at: string
           draws: number | null
           goals_against: number | null
           goals_for: number | null
+          group_id: string | null
           id: string
           losses: number | null
           matches_played: number | null
+          phase_id: string | null
           points: number | null
           position: number | null
-          series: string
+          punishment_points: number | null
+          punishment_reason: string | null
+          series_id: string
           team_id: string | null
           tournament_id: string | null
           updated_at: string
@@ -262,12 +359,16 @@ export type Database = {
           draws?: number | null
           goals_against?: number | null
           goals_for?: number | null
+          group_id?: string | null
           id?: string
           losses?: number | null
           matches_played?: number | null
+          phase_id?: string | null
           points?: number | null
           position?: number | null
-          series: string
+          punishment_points?: number | null
+          punishment_reason?: string | null
+          series_id: string
           team_id?: string | null
           tournament_id?: string | null
           updated_at?: string
@@ -278,18 +379,43 @@ export type Database = {
           draws?: number | null
           goals_against?: number | null
           goals_for?: number | null
+          group_id?: string | null
           id?: string
           losses?: number | null
           matches_played?: number | null
+          phase_id?: string | null
           points?: number | null
           position?: number | null
-          series?: string
+          punishment_points?: number | null
+          punishment_reason?: string | null
+          series_id?: string
           team_id?: string | null
           tournament_id?: string | null
           updated_at?: string
           wins?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_standings_series"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standings_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "phase_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standings_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_phases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "standings_team_id_fkey"
             columns: ["team_id"]
@@ -313,7 +439,8 @@ export type Database = {
           name: string
           reason: string | null
           remaining_matches: number
-          series: string
+          series_id: string
+          team_id: string | null
           tournament_id: string | null
           updated_at: string
         }
@@ -323,7 +450,8 @@ export type Database = {
           name: string
           reason?: string | null
           remaining_matches?: number
-          series: string
+          series_id: string
+          team_id?: string | null
           tournament_id?: string | null
           updated_at?: string
         }
@@ -333,11 +461,26 @@ export type Database = {
           name?: string
           reason?: string | null
           remaining_matches?: number
-          series?: string
+          series_id?: string
+          team_id?: string | null
           tournament_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_suspended_players_series"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suspended_players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "suspended_players_tournament_id_fkey"
             columns: ["tournament_id"]
@@ -388,21 +531,112 @@ export type Database = {
           created_at: string
           id: string
           name: string
-          series: string
+          series_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
-          series: string
+          series_id: string
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
-          series?: string
+          series_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_teams_series"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_phases: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          name: string
+          phase_order: number
+          phase_type: string
+          start_date: string | null
+          status: string
+          tournament_series_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name: string
+          phase_order: number
+          phase_type: string
+          start_date?: string | null
+          status?: string
+          tournament_series_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name?: string
+          phase_order?: number
+          phase_type?: string
+          start_date?: string | null
+          status?: string
+          tournament_series_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_phases_tournament_series_id_fkey"
+            columns: ["tournament_series_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_series: {
+        Row: {
+          created_at: string
+          id: string
+          series_id: string
+          tournament_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          series_id: string
+          tournament_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          series_id?: string
+          tournament_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_series_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_series_tournament_id_fkey"
+            columns: ["tournament_id"]
+            isOneToOne: false
+            referencedRelation: "tournaments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tournaments: {
         Row: {
@@ -413,7 +647,6 @@ export type Database = {
           points_draw: number
           points_loss: number
           points_win: number
-          series: string
           start_date: string | null
           status: string
           updated_at: string
@@ -426,7 +659,6 @@ export type Database = {
           points_draw?: number
           points_loss?: number
           points_win?: number
-          series: string
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -439,7 +671,6 @@ export type Database = {
           points_draw?: number
           points_loss?: number
           points_win?: number
-          series?: string
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -480,6 +711,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_groups_for_phase: {
+        Args: { p_phase_id: string }
+        Returns: {
+          group_id: string
+          group_name: string
+          group_order: number
+        }[]
+      }
+      get_phases_for_tournament_series: {
+        Args: { p_series_id: string; p_tournament_id: string }
+        Returns: {
+          phase_id: string
+          phase_name: string
+          phase_order: number
+          phase_status: string
+          phase_type: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -487,18 +736,27 @@ export type Database = {
         }
         Returns: boolean
       }
-      rebuild_all_standings: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      rebuild_standings_for_tournament_series: {
-        Args: { p_series?: string; p_tournament_id?: string }
-        Returns: undefined
-      }
-      recalculate_standings_positions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      is_group_phase: { Args: { p_phase_id: string }; Returns: boolean }
+      rebuild_standings_for_tournament_series:
+        | {
+            Args: {
+              p_series_id?: string
+              p_series_name?: string
+              p_tournament_id?: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_group_id?: string
+              p_phase_id?: string
+              p_series_id?: string
+              p_series_name?: string
+              p_tournament_id?: string
+            }
+            Returns: undefined
+          }
+      recalculate_standings_positions: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user" | "futbol" | "content"
