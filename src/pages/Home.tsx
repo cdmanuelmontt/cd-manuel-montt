@@ -3,7 +3,7 @@ import { Calendar, MapPin, Clock, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 interface Match {
@@ -286,31 +286,31 @@ export default function Home() {
                       <div className="text-xs font-semibold text-center text-muted-foreground mb-2">
                         Racha últimos partidos
                       </div>
-                      <TooltipProvider>
-                        <div className="flex justify-center gap-2">
-                          {teamResults[match.team_id]?.length > 0 ? teamResults[match.team_id].map((result, idx) => <Tooltip key={idx}>
-                                <TooltipTrigger>
-                                  <div className={`w-8 h-8 rounded-full ${getResultColor(result.result)} flex items-center justify-center text-white text-xs font-bold shadow-sm hover:scale-110 transition-transform cursor-pointer`}>
-                                    {result.result === 'win' ? 'G' : result.result === 'loss' ? 'P' : 'E'}
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-[250px]">
-                                  <div className="space-y-2">
-                                    <div className="font-semibold text-center break-words">
-                                      {capitalizeTeamName(result.teamName)}
-                                    </div>
-                                    <div className="text-center text-xs text-muted-foreground">vs</div>
-                                    <div className="font-semibold text-center break-words">
-                                      {capitalizeTeamName(result.opponentName)}
-                                    </div>
-                                    <div className="text-center pt-1 border-t">
-                                      <span className="text-sm font-bold">{result.teamScore} - {result.opponentScore}</span>
-                                    </div>
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>) : <div className="text-xs text-muted-foreground">Sin datos</div>}
-                        </div>
-                      </TooltipProvider>
+                      <div className="flex justify-center gap-2">
+                        {teamResults[match.team_id]?.length > 0 ? teamResults[match.team_id].map((result, idx) => (
+                          <Popover key={idx}>
+                            <PopoverTrigger asChild>
+                              <button className={`w-8 h-8 rounded-full ${getResultColor(result.result)} flex items-center justify-center text-white text-xs font-bold shadow-sm hover:scale-110 transition-transform cursor-pointer`}>
+                                {result.result === 'win' ? 'G' : result.result === 'loss' ? 'P' : 'E'}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-3">
+                              <div className="space-y-2">
+                                <div className="font-semibold text-center break-words text-sm">
+                                  {capitalizeTeamName(result.teamName)}
+                                </div>
+                                <div className="text-center text-xs text-muted-foreground">vs</div>
+                                <div className="font-semibold text-center break-words text-sm">
+                                  {capitalizeTeamName(result.opponentName)}
+                                </div>
+                                <div className="text-center pt-1 border-t">
+                                  <span className="text-sm font-bold">{result.teamScore} - {result.opponentScore}</span>
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        )) : <div className="text-xs text-muted-foreground">Sin datos</div>}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>)}
