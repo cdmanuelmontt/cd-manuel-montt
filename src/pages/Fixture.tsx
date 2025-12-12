@@ -82,7 +82,6 @@ interface MatchByGroup {
 interface Tournament {
   id: string;
   name: string;
-  series: string;
   status: string;
   start_date: string;
   end_date: string;
@@ -180,16 +179,21 @@ export default function Fixture() {
         group: match.group_id ? groupsMap.get(match.group_id) : null
       }));
 
-      // Filter only series that belong to this tournament and sort them
+      // Filter only series that belong to this tournament and sort them by position
       const sortedSeries = (seriesData || [])
         .filter((s: any) => tournamentSeriesIds.has(s.id))
         .map((s: any) => s.name);
       
       setAvailableSeries(sortedSeries);
       
-      // Set the first series as selected by default if not already set
-      if (sortedSeries.length > 0 && !selectedSeries) {
-        setSelectedSeries(sortedSeries[0]);
+      // Set the first participating series as selected (lowest position number)
+      // Always update when tournament changes to ensure a valid series is selected
+      if (sortedSeries.length > 0) {
+        if (!selectedSeries || !sortedSeries.includes(selectedSeries)) {
+          setSelectedSeries(sortedSeries[0]);
+        }
+      } else {
+        setSelectedSeries('');
       }
 
       // Get available groups per series
