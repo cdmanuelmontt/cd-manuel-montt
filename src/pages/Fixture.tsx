@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Trophy, Icon, Download } from "lucide-react";
+import { Trophy, Icon, Download, Users } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -426,17 +426,24 @@ export default function Fixture() {
             }}
             className="w-full"
           >
-            <TabsList className={`grid w-full mb-8 ${availableSeries.length === 1 ? 'grid-cols-1' : availableSeries.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-              {availableSeries.map((serie) => (
-                <TabsTrigger 
-                  key={serie} 
-                  value={serie} 
-                  className="text-sm"
-                >
-                  {serie}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            {/* Series selector with clear label */}
+            <div className="mb-8">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Users className="h-5 w-5 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Selecciona una categoría:</span>
+              </div>
+              <TabsList className={`grid w-full max-w-2xl mx-auto h-auto p-1.5 gap-1 bg-muted/60 ${availableSeries.length === 1 ? 'grid-cols-1' : availableSeries.length === 2 ? 'grid-cols-2' : availableSeries.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-5'}`}>
+                {availableSeries.map((serie) => (
+                  <TabsTrigger 
+                    key={serie} 
+                    value={serie} 
+                    className="relative text-sm font-medium py-2.5 px-4 transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md data-[state=inactive]:hover:bg-background/80 data-[state=inactive]:hover:text-foreground rounded-md"
+                  >
+                    {serie}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
           {availableSeries.map((serie) => (
             <TabsContent key={serie} value={serie}>
